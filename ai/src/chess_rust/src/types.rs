@@ -84,5 +84,17 @@ pub struct Board {
     pub white_prime1: i32,
     pub black_prime1: i32,
     pub prime2: i32,
-    pub ai_advantage: i64,
+    pub ai_advantage: f64,
+}
+
+pub struct TreeNode {
+    pub children: vec<TreeNode>,
+    pub parent: vec<TreeNode>,
+    pub board: Board,
+    pub level: i32,
+}
+
+pub struct AdavantageMap {
+    advantage: f64,
+    board: Board,
 }

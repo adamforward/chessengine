@@ -581,4 +581,7 @@ fn mapping(n: i32) -> String {
     }
 }
 
-
+pub fn init_tree_node(curr &Board, parent &TreeNode, level:i32){
+    let children vec<Board>=Vec::New();
+    return TreeNode(children, parent, curr, level)
+}
