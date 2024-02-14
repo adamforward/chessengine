@@ -1,0 +1,25 @@
+100% operational methods: 
+r, q, K, k and b moves generators 
+move
+inCheck2
+
+Most of the code works, but a few specific cases cause issues in these methods:
+pawn moves gen (en passant)
+allMovesGen (pinned, inCheck1 helper methods) I am going to make a lot of changes to the pinned method. 
+Player interface is good for now because its designed for me to run tests at the moment. 
+Eventually I want to change it so that for when someone else is running my program,
+its index selection instead of piece, then it shows you available moves for that piece then new index selection.
+
+Still need to debug: 
+AI advantage eval methods (should be very easy), some of the parameters will be adjusted after 
+genTopMoves
+Search 
+AI Move 
+
+Currently, an opening move tree with around 100 nodes for both white and black is the only new 
+thing that I am looking to implement outside of optimizing and debugging the current code. I am going 
+to use 
+
+Use effect
+side effects to react hook 
+side effects as a result of state changing

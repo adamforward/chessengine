@@ -1,0 +1,447 @@
+The __init_subclass__ method is a special method in Python that is called whenever a new subclass is defined. 
+It allows you to customize the behavior of the subclass by defining it in the base class. 
+In this case, it seems like the purpose of the __init_subclass__ method is to set self to the value of cls, which is the class object being defined. 
+However, this assignment doesn't do anything useful because self is a local variable in the method and the assignment has no effect outside the method.
+
+You may want to remove the __init_subclass__ method because it doesn't appear to serve any purpose. 
+You can also remove the self=cls assignment because it doesn't do anything.
+
+It's also worth noting that the piece class has a type attribute that shadows the built-in type function.
+ This can cause problems because you won't be able to use the type function to determine the type of an object. 
+ It's a good practice to avoid using names that shadow built-in functions or variables. 
+ You could consider renaming the type attribute to something else, like kind or rank, to avoid this issue.
+It looks like there are a few issues with the generatePawnMovesw method:
+
+The first if statement has a condition row==6 that checks if the row of the pawn is 6, but the pawns for white start at row 6. 
+This means that the code inside the if block will never be executed. You may want to change the condition to row == 7 to fix this issue.
+
+In the first if statement, you're adding the value 40 + col to the re list. This value will always be between 40 and 47 because col is between 0 and 7. 
+However, it seems like you're trying to add the coordinates of the square that the pawn can move to. 
+The coordinates of a square are given by its row and column indices,
+ so you should be adding the row and column indices to the re list instead of the values 40 and 47.
+
+In the second if statement, you're checking if the team of the piece in the square at position (row - 1, col) is 'n'. 
+However, you should be checking if the piece in that square is 'n' (an empty square). 
+If the square is not empty, the pawn cannot move there.
+
+In the elif block that handles the case where col is 0, you have a condition row==3 that checks if the row of the pawn is 3.
+ This doesn't seem to make sense because the pawn can only attack diagonally if it's on the row above the row where the enemy pawn is.
+  You may want to change this condition to row == 4 to fix this issue.
+
+In the elif block that handles the case where col is 7, you have the same issue as in the previous point.
+ You should change the condition row==3 to row == 4.
+
+In the else block, you have a condition row==3 that checks if the row of the pawn is 3.
+ This doesn't seem to make sense because the pawn can only attack diagonally if it's on the row above the row where the enemy pawn is. 
+ You may want to change this condition to row == 4 to fix this issue.
+
+In the else block, you're checking if the team of the piece in the squares at positions (row - 1, col - 1) and (row - 1, col + 1) is 'b'.
+However, you should be checking if the piece in those squares is 'b' (a black piece).
+ If the square is empty or contains a white piece, the pawn cannot attack it.
+
+I hope this helps! Let me know if you have any questions.
+It looks like this knightMoves function is intended to generate all the possible moves that a knight piece can make on a chess board. 
+It appears that the function is trying to handle boundary conditions and check if the 
+resulting squares from the knight's moves are occupied by friendly pieces.
+ It is also checking if the resulting squares are in bounds of the chess board.
+
+One thing that stands out is that there is a lot of duplication in the code.
+For example, the code for adding 3 to the row and 1 to the column is repeated several times.
+ It might be more efficient to combine some of these cases and use elif statements to avoid unnecessary checks.
+
+It might also be helpful to use a list of tuples or a list of lists to represent the knight's 
+moves instead of using the knightMoves variable. 
+This would allow you to easily loop through the list and apply each move to the 
+current position of the knight, rather than writing out each case separately.
+
+It might also be helpful to refactor the function to take the chess board as an argument, rather than accessing the fullBoard attribute of the board object. 
+This would make the function more flexible and easier to test.
+It looks like the bishopMoves function is trying to generate all the possible moves that a bishop can make on a chess board. 
+The function takes in the current row and column of the bishop and then checks the four diagonal directions that the bishop can move in. 
+The function returns a list of all the possible moves that the bishop can make.
+
+There are a few issues with the implementation of the function. 
+Firstly, the function does not check for boundary conditions, which means that the function can produce 
+index out of bounds errors when trying to access elements of the self.fullBoard list that do not exist. 
+Secondly, the function does not consider the presence of other pieces on the board when generating moves, 
+which means that the bishop can move through and capture its own pieces. 
+Finally, the function does not check if the move will result in the bishop putting the player's own king in check.
+
+def rookMoves(self, row:int, col:int):
+    re = []
+    team = self.fullBoard[row][col]
+    for i in (1, -1):
+        temp_row = row + i
+        while 0 <= temp_row <= 7 and self.fullBoard[temp_row][col].team != team:
+            re.append(temp_row * 10 + col)
+            if self.fullBoard[temp_row][col].team != "n":
+                break
+            temp_row += i
+
+        temp_col = col + i
+        while 0 <= temp_col <= 7 and self.fullBoard[row][temp_col].team != team:
+            re.append(row * 10 + temp_col)
+            if self.fullBoard[row][temp_col].team != "n":
+                break
+            temp_col += i
+    return re
+Also, in both functions, there is a section of code that creates an empty list called overlap,
+ and then checks if each index in goodMoves is in the available moves of the pinned piece. If it is, the index is appended to overlap. 
+This overlap list is not used for anything after it is created, so it can be removed.
+
+def bishopMoves(self, row:int, col:int):
+        team=self.fullBoard[row][col]
+        re=[]
+        temprow=row
+        tempcol=col#can move diagonally in 4 directions
+        temprow+=1
+        tempcol+=1
+        while self.fullBoard[temprow][tempcol].team!=team and temprow<=7 and tempcol<=7: 
+            re.append(temprow*10+tempcol)
+            temprow+=1
+            tempcol+=1
+            if self.fullBoard[temprow][tempcol].team!='n': 
+                break
+        temprow=row
+        tempcol=col#can move diagonally in 4 directions
+        temprow-=1
+        tempcol+=1
+        while self.fullBoard[temprow][tempcol].team!=team and temprow>=0 and tempcol<=7: 
+            re.append(temprow*10+tempcol)
+            temprow-=1
+            tempcol+=1
+            if self.fullBoard[temprow][tempcol].team!='n': 
+                break
+        temprow=row
+        tempcol=col#can move diagonally in 4 directions
+        temprow-=1
+        tempcol-=1
+        while self.fullBoard[temprow][tempcol].team!=team and temprow>=0 and tempcol>=0: 
+            re.append(temprow*10+tempcol)
+            temprow-=1
+            tempcol-=1
+            if self.fullBoard[temprow][tempcol].team!='n': #if it's the oppossite team
+                break
+        temprow=row
+        tempcol=col#can move diagonally in 4 directions
+        temprow+=1
+        tempcol-=1
+        while self.fullBoard[temprow][tempcol].team!=team and temprow<=7 and tempcol>=0: 
+            re.append(temprow*10+tempcol)
+            temprow+=1
+            tempcol-=1
+            if self.fullBoard[temprow][tempcol].team!='n': #if it's the oppossite team
+                break
+        return re
+    def knightMoves(self, row: int, col: int):#knight moves +3 and +1 in either direction
+        #need to implement boundary conditions 
+        re=[]
+        knightMoves=([1,3],[-1,3],[1,-3])
+        team=self.fullBoard[row][col].team
+        if row<1: #in the corner
+            if col<1:#can only add to row and col here  
+                if self.fullBoard[row+1][col+3].team!=team:
+                    re.append(10*(row+1)+col+3)
+                if self.fullBoard[row+3][col+1].team!=team:
+                    re.append(10*(row+3)+col+1)
+            elif col==1 or col==3: #can do col-1 here 
+                if self.fullBoard[row+1][col+3].team!=team:
+                    re.append(10*(row+1)+col+3)
+                if self.fullBoard[row+3][col+1].team!=team:
+                    re.append(10*(row+3)+col+1)
+                if self.fullBoard[row+3][col-1].team!=team:
+                    re.append(10*(row+3)+col-1)
+            elif col>6: #for boundary conditions
+                if self.fullBoard[row+1][col-3].team!=team:
+                    re.append(10*(row+1)+col-3)
+                if self.fullBoard[row+3][col-1].team!=team:#can only subtract from col 
+                    re.append(10*(row+3)+col-1)
+            elif col==6 or col==5: #can add 1, but not 3 to col
+                if self.fullBoard[row+1][col-3].team!=team:
+                    re.append(10*(row+1)+col-3)
+                if self.fullBoard[row+3][col+1].team!=team:
+                    re.append(10*(row+3)+col+1)
+                if self.fullBoard[row+3][col-1].team!=team:
+                    re.append(10*(row+3)+col-1)
+            else: #if it's in the middle of the board, col can be + or - 1 or 3
+                if self.fullBoard[row+1][col+3].team!=team:
+                    re.append(10*(row+1)+col+3)
+                if self.fullBoard[row+3][col+1].team!=team:
+                    re.append(10*(row+3)+col+1)
+                if self.fullBoard[row+1][col-3].team!=team:
+                    re.append(10*(row+1)+col-3)
+                if self.fullBoard[row+3][col-1].team!=team:#can only subtract from col 
+                    re.append(10*(row+3)+col-1)
+        elif row==1 or row==3: 
+            if col<1:#same as above, but you can subtract one from row now.   
+                if self.fullBoard[row-1][col+3].team!=team:
+                    re.append(10*(row-1)+col+3)
+                if self.fullBoard[row+1][col+3].team!=team:
+                    re.append(10*(row+1)+col+3)
+                if self.fullBoard[row+3][col+1].team!=team:
+                    re.append(10*(row+3)+col+1)
+            elif col==1 or col==2: #can do col-1 here 
+                if self.fullBoard[row-1][col+3].team!=team:
+                    re.append(10*(row-1)+col+3)
+                if self.fullBoard[row+1][col+3].team!=team:
+                    re.append(10*(row+1)+col+3)
+                if self.fullBoard[row+3][col+1].team!=team:
+                    re.append(10*(row+3)+col+1)
+                if self.fullBoard[row+3][col-1].team!=team:
+                    re.append(10*(row+3)+col-1)
+            elif col>6: #for boundary conditions
+                if self.fullBoard[row-1][col-3].team!=team:
+                    re.append(10*(row-1)+col-3)
+                if self.fullBoard[row+1][col-3].team!=team:
+                    re.append(10*(row+1)+col-3)
+                if self.fullBoard[row+3][col-1].team!=team:#can only subtract from col 
+                    re.append(10*(row+3)+col-1)
+            elif col==6 or col==5: #can add 1, but not 3 to col
+                if self.fullBoard[row-1][col-3].team!=team:
+                    re.append(10*(row-1)+col-3)
+                if self.fullBoard[row+1][col-3].team!=team:
+                    re.append(10*(row+1)+col-3)
+                if self.fullBoard[row+3][col+1].team!=team:
+                    re.append(10*(row+3)+col+1)
+                if self.fullBoard[row+3][col-1].team!=team:
+                    re.append(10*(row+3)+col-1)
+            else: #if it's in the middle of the board, col can be + or - 1 or 3
+                if self.fullBoard[row-1][col-3].team!=team:
+                    re.append(10*(row-1)+col-3)#can subtract and add 
+                if self.fullBoard[row-1][col+3].team!=team:
+                    re.append(10*(row-1)+col+3)
+                if self.fullBoard[row+1][col+3].team!=team:
+                    re.append(10*(row+1)+col+3)
+                if self.fullBoard[row+1][col-3].team!=team:
+                    re.append(10*(row+1)+col-3)
+                if self.fullBoard[row+3][col-1].team!=team:#can only subtract from col 
+                    re.append(10*(row+3)+col-1)
+                if self.fullBoard[row+3][col-1].team!=team:
+                    re.append(10*(row+3)+col-1)
+        elif row>6:#can only subtract one from row 
+            if col<1:#can only add to row and col here  
+                if self.fullBoard[row-1][col+3].team!=team:
+                    re.append(10*(row-1)+col+3)
+                if self.fullBoard[row-3][col+1].team!=team:
+                    re.append(10*(row-3)+col+1)
+            elif col>=1 and col<3: #can do col-1 here 
+                if self.fullBoard[row-1][col+3].team!=team:
+                    re.append(10*(row-1)+col+3)
+                if self.fullBoard[row-3][col+1].team!=team:
+                    re.append(10*(row-3)+col+1)
+                if self.fullBoard[row-3][col-1].team!=team:
+                    re.append(10*(row-3)+col-1)
+            elif col>6: #for boundary conditions
+                if self.fullBoard[row-1][col-3].team!=team:
+                    re.append(10*(row-1)+col-3)
+                if self.fullBoard[row-3][col-1].team!=team:#can only subtract from col 
+                    re.append(10*(row-3)+col-1)
+            elif col==6 or col==5: #can add 1, but not 3 to col
+                if self.fullBoard[row-1][col-3].team!=team:
+                    re.append(10*(row-1)+col-3)
+                if self.fullBoard[row-3][col+1].team!=team:
+                    re.append(10*(row-3)+col+1)
+                if self.fullBoard[row-3][col-1].team!=team:
+                    re.append(10*(row-3)+col-1)
+            else: #if it's in the middle of the board, col can be + or - 1 or 3
+                if self.fullBoard[row-1][col+3].team!=team:
+                    re.append(10*(row-1)+col+3)
+                if self.fullBoard[row-3][col+1].team!=team:
+                    re.append(10*(row-3)+col+1)
+                if self.fullBoard[row-1][col-3].team!=team:
+                    re.append(10*(row-1)+col-3)
+                if self.fullBoard[row-3][col-1].team!=team:#can only subtract from col 
+                    re.append(10*(row-3)+col-1)
+                if self.fullBoard[row-3][col-1].team!=team:
+                    re.append(10*(row-3)+col-1)
+        elif row==6 or row==5:#can subtract from row or add 1
+            if col<1:#can only add to row and col here  
+                if self.fullBoard[row-1][col+3].team!=team:
+                    re.append(10*(row-1)+col+3)
+                if self.fullBoard[row-3][col+1].team!=team:
+                    re.append(10*(row-3)+col+1)
+                if self.fullBoard[row+1][col+3].team!=team:
+                    re.append(10*(row+1)+col+3)
+            elif col>=1 and col<3: #can do col-1 here 
+                if self.fullBoard[row-1][col+3].team!=team:
+                    re.append(10*(row-1)+col+3)
+                if self.fullBoard[row-3][col+1].team!=team:
+                    re.append(10*(row-3)+col+1)
+                if self.fullBoard[row-3][col-1].team!=team:
+                    re.append(10*(row-3)+col-1)
+                if self.fullBoard[row+1][col+3].team!=team:
+                    re.append(10*(row+1)+col+3)
+            elif col>6: #for boundary conditions
+                if self.fullBoard[row-1][col-3].team!=team:
+                    re.append(10*(row-1)+col-3)
+                if self.fullBoard[row-3][col-1].team!=team:#can only subtract from col 
+                    re.append(10*(row-3)+col-1)
+                if self.fullBoard[row-3][col-1].team!=team:
+                    re.append(10*(row-3)+col-1)
+                if self.fullBoard[row+1][col-3].team!=team:
+                    re.append(10*(row+1)+col-3)
+            elif col==6 or col==5: #can add 1, but not 3 to col
+                if self.fullBoard[row-1][col-3].team!=team:
+                    re.append(10*(row-1)+col-3)
+                if self.fullBoard[row-3][col+1].team!=team:
+                    re.append(10*(row-3)+col+1)
+                if self.fullBoard[row-3][col-1].team!=team:
+                    re.append(10*(row-3)+col-1)
+                if self.fullBoard[row+1][col-3].team!=team:
+                    re.append(10*(row+1)+col-3)
+            else: #if it's in the middle of the board, col can be + or - 1 or 3
+                if self.fullBoard[row-1][col+3].team!=team:
+                    re.append(10*(row-1)+col+3)
+                if self.fullBoard[row-3][col+1].team!=team:
+                    re.append(10*(row-3)+col+1)
+                if self.fullBoard[row-1][col-3].team!=team:
+                    re.append(10*(row-1)+col-3)
+                if self.fullBoard[row-3][col-1].team!=team:
+                    re.append(10*(row-3)+col-1)
+                if self.fullBoard[row+1][col-3].team!=team:
+                    re.append(10*(row+1)+col-3)
+                if self.fullBoard[row+1][col+3].team!=team:
+                    re.append(10*(row+1)+col+3)
+        else:#can add and subtract 1 or 3 from row 
+            if col<1:#can only add to row and col here  
+                if self.fullBoard[row-1][col+3].team!=team:
+                    re.append(10*(row-1)+col+3)
+                if self.fullBoard[row-3][col+1].team!=team:
+                    re.append(10*(row-3)+col+1)
+                if self.fullBoard[row+1][col+3].team!=team:
+                    re.append(10*(row+1)+col+3)
+                if self.fullBoard[row+3][col+1].team!=team:
+                    re.append(10*(row+3)+col+1)
+            elif col>=1 and col<3: #can do col-1 here 
+                if self.fullBoard[row-1][col+3].team!=team:
+                    re.append(10*(row-1)+col+3)
+                if self.fullBoard[row-3][col+1].team!=team:
+                    re.append(10*(row-3)+col+1)
+                if self.fullBoard[row-3][col-1].team!=team:
+                    re.append(10*(row-3)+col-1)
+                if self.fullBoard[row+1][col+3].team!=team:
+                    re.append(10*(row+1)+col+3)
+            elif col>6: #for boundary conditions
+                if self.fullBoard[row-1][col-3].team!=team:
+                    re.append(10*(row-1)+col-3)
+                if self.fullBoard[row-3][col-1].team!=team:#can only subtract from col 
+                    re.append(10*(row-3)+col-1)
+                if self.fullBoard[row-3][col-1].team!=team:
+                    re.append(10*(row-3)+col-1)
+                if self.fullBoard[row+1][col-3].team!=team:
+                    re.append(10*(row+1)+col-3)
+            elif col==6 or col==5: #can add 1, but not 3 to col
+                if self.fullBoard[row-1][col-3].team!=team:
+                    re.append(10*(row-1)+col-3)
+                if self.fullBoard[row-3][col+1].team!=team:
+                    re.append(10*(row-3)+col+1)
+                if self.fullBoard[row-3][col-1].team!=team:
+                    re.append(10*(row-3)+col-1)
+                if self.fullBoard[row+3][col+1].team!=team:
+                    re.append(10*(row+3)+col+1)
+                if self.fullBoard[row+1][col-3].team!=team: 
+                    re.append(10*(row+1)+col-3)
+                if self.fullBoard[row+3][col-1].team!=team:
+                    re.append(10*(row+3)+col-1)
+            else: #if it's in the middle of the board, col can be + or - 1 or 3
+                if self.fullBoard[row-1][col+3].team!=team:
+                    re.append(10*(row-1)+col+3)
+                if self.fullBoard[row-3][col+1].team!=team:
+                    re.append(10*(row-3)+col+1)
+                if self.fullBoard[row-1][col-3].team!=team:
+                    re.append(10*(row-1)+col-3)
+                if self.fullBoard[row-3][col-1].team!=team:#can only subtract from col 
+                    re.append(10*(row-3)+col-1)
+                if self.fullBoard[row+1][col+3].team!=team:
+                    re.append(10*(row+1)+col+3)
+                if self.fullBoard[row+3][col+1].team!=team:
+                    re.append(10*(row+3)+col+1)
+                if self.fullBoard[row+1][col-3].team!=team:
+                    re.append(10*(row+1)+col-3)
+                if self.fullBoard[row+3][col-1].team!=team:#can only subtract from col 
+                    re.append(10*(row+3)+col-1)
+                if self.fullBoard[row+3][col-1].team!=team:
+                    re.append(10*(row+3)+col-1)
+        return re
+def generate_top_moves(curr_game: board, num_moves: int):
+    """
+    This function generates the top `num_moves` moves for the current team in the `curr_game` board.
+
+    Arguments:
+    curr_game -- an object of the board class, representing the current state of the game board.
+    num_moves -- an integer representing the number of moves to generate.
+
+    Returns:
+    A list of `board` objects, each representing a game state after making the top `num_moves` moves.
+
+    Raises:
+    ValueError -- if `num_moves` is greater than the number of available moves.
+    """
+    advantage_map = {}
+    results = []
+    advantage_vals = []
+    placeholder = curr_game.deep_clone()
+
+    curr_game.all_moves_gen()
+    available_moves = curr_game.white_available_moves if curr_game.turn == 0 else curr_game.black_available_moves
+    pieces = curr_game.white_pieces if curr_game.turn == 0 else curr_game.black_pieces
+
+    for i in pieces:
+        if available_moves[i] is not None:
+            for j in available_moves[i]:
+                curr_game.move(i, j)
+                curr_game.all_moves_gen()
+                curr_game.ai_advantage_eval()
+                advantage = curr_game.advantage
+                advantage_map[advantage] = [i, j]
+                advantage_vals.append(advantage)
+                curr_game = placeholder
+
+    if len(advantage_vals) < num_moves:
+        raise ValueError("Number of moves requested is greater than the number of available moves.")
+
+    advantage_vals.sort(reverse=True)
+    for i in range(num_moves):
+        curr_game.move(advantage_map[advantage_vals[i]][0], advantage_map[advantage_vals[i]][1])
+        results.append(curr_game)
+        curr_game = placeholder
+
+    return results
+
+    def generateTopMoves(currGame:board, numMoves: int): #this function works for either team, so it can simulate human moves. 
+    advantageMap = {}
+    results = []
+    advantageVals = []
+    
+    currGame.allMovesGen()
+    
+    pieces = currGame.whitePieces if currGame.turn%2 == 0 else currGame.blackPieces
+    
+    for i in pieces:
+        availableMoves = currGame.whiteaVailableMoves if currGame.turn%2 == 0 else currGame.blackAvailableMoves
+        if availableMoves[i] is not None:
+            for j in availableMoves[i]:
+                placeholder = copy.deepcopy(currGame)
+                print(i)
+                print(j)
+                currGame.move(i, j)
+                currGame.allMovesGen()
+                currGame.AIAdvantageEval()
+                currGame = placeholder
+                advantage = currGame.AIAdvantage
+                advantageMap[advantage] = [i, j]
+                advantageVals.append(advantage)
+                currGame.printBoard()
+
+    if len(advantageVals) < numMoves:
+        raise ValueError("Number of moves requested is greater than the number of available moves.")
+
+    advantageVals.sort(reverse=True)
+    for i in range(numMoves):
+        placeholder=copy.deepcopy(currGame)
+        currGame.move(advantageMap[advantageVals[i]][0], advantageMap[advantageVals[i]][1])
+        currGame.printBoard()
+        results.append(currGame)
+        currGame = placeholder
+
+    return results

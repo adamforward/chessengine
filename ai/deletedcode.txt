@@ -1,0 +1,293 @@
+# game2 = board()
+# test2 = board()
+# x = True
+# while x == True:
+#     # print("openingMoveTree(",game2.whitePieces,",", game2.blackPieces, ",", game2.whiteIndexes, ",", game2.blackIndexes, ")")
+#     game2.allMovesGen()
+#     game2.printInfo()
+#     if (game2.turn % 2 == 0):
+#         print("white turn")
+#     else:
+#         print("black turn")
+#     print("what piece do you want to move?")
+#     d = False
+#     a = ""
+#     b = ""
+#     while d == False:
+#         a = input()
+#         print("indexes?")
+#         b = input()
+#         c = reverseMapping(b)
+#         if game2.turn % 2 == 0:
+#             if a in game2.whitePieces and c in game2.whiteaVailableMoves[a]:
+#                 d = True
+#             else:
+#                 print("something is wrong")
+#         else:
+#             if a in game2.blackPieces and c in game2.blackAvailableMoves[a]:
+#                 d = True
+#             else:
+#                 print("something is wrong")
+#     game2.move(a, c)
+#     # p5 E4
+#     # p3 C5
+#     # k2 F3
+#     # p4 D6
+#     # p4 D4
+#     # p5 D5
+
+
+# theGame = board()
+# theGame.inPlay = True
+# if (theGame.turn % 2 == 0):
+#     print("white turn")
+#     theGame.printInfo()
+#     playerSTR = ""
+#     print("Enter the indexes of the piece you want to move. Example: H4")
+#     while playerValidPiece == False:
+#         playerPiece = input()
+#         playerIndexes = reverseMapping(playerPiece)
+#         if playerIndexes in theGame.whiteIToP:
+#             playerSTR = theGame.whiteIToP[playerIndexes]
+#             if len(theGame.whiteaVailableMoves[playerSTR]) > 0:
+#                 playerValidPiece = True
+#                 playerSTR = theGame.whiteIToP[playerIndexes]
+#             else:
+#                 print("Please enter a piece that can move.")
+#         else:
+#             print("Please enter valid indexes of a black piece.")
+#         print("Which indexes would you like to move it to?")
+#         while playerValidMove == False:
+#             playerMove = input()
+#             playerMoveIndexes = reverseMapping(playerMove)  # AI team is black
+#             if playerMoveIndexes in theGame.blackAvailableMoves[playerSTR]:
+#                 validMovePiece = True
+#                 break
+#             else:
+#                 print("Please enter valid indexes to move to")
+# else:
+#     playerMistake = True
+#     while playerMistake == True:
+#         playerMoveIndexes = -1
+#         playerValidPiece = False
+#         playerValidMove = False
+#         theGame.printMirrorBoard()
+#         theGame.allMovesGen()
+#         playerSTR = ""
+#         print("Enter the indexes of the piece you want to move. Example: H4")
+#         while playerValidPiece == False:
+#             playerPiece = input()
+#             playerIndexes = reverseMapping(playerPiece)
+#             if playerIndexes in theGame.blackIToP:
+#                 playerSTR = theGame.blackIToP[playerIndexes]
+#                 if len(theGame.blackAvailableMoves[playerSTR]) > 0:
+#                     playerValidPiece = True
+#                     layerSTR = theGame.blackIToP[playerIndexes]
+#                 else:
+#                     print("Please enter a piece that can move.")
+#             else:
+#                 print("Please enter valid indexes of a black piece.")
+#                 print("Which indexes would you like to move it to?")
+#                 while playerValidMove == False:
+#                     playerMove = input()
+#                     playerMoveIndexes = reverseMapping(
+#                         playerMove)  # AI team is black
+#                     if playerMoveIndexes in theGame.blackAvailableMoves[playerSTR]:
+#                         validMovePiece = True
+#                         break
+#                     else:
+#                         print("Please enter valid indexes to move to")
+#                 print("Are you sure you want to make this move? Type in CHANGE if you would like to select a different move. Press enter to continue.")
+#                 con = input()
+#                 if con == "CHANGE":
+#                     continue
+#                 else:
+#                     playerMistake = False
+#                     theGame.move(playerSTR, playerMoveIndexes)
+#                     theGame.allMovesGen()
+#                     theGame.AIAdvantageEval()
+
+# theGame = board()
+# print("Which team would you like to play as? Enter W for white or B for black")
+# validPTeam = False
+# playerTeam = ""
+# while validPTeam == False:
+#     playerTeam = input()
+#     if playerTeam == "W" or playerTeam == "B":
+#         validPTeam = True
+#     else:
+#         print("Please enter a valid team")
+# if playerTeam == "W":
+#     theGame.AIteamIsWhite = False
+# else:
+#     theGame.AIteamIsWhite = True
+
+
+# if theGame.AIteamIsWhite == True:
+
+#     while theGame.inPlay == True:
+#         if theGame.turn % 2 == 0:
+#             AIMove = AImove(theGame)
+#             print(
+#                 mapping(theGame.whiteIndexes[AIMove[0]]), ' to ', mapping(AIMove[1]))
+#             theGame.move(AIMove[0], AIMove[1])
+#             theGame.allMovesGen()
+#             theGame.AIAdvantageEval()
+#         else:
+#             playerMistake = True
+#             while playerMistake == True:
+#                 playerMoveIndexes = -1
+#                 playerValidPiece = False
+#                 playerValidMove = False
+#                 theGame.printMirrorBoard()
+#                 theGame.allMovesGen()
+#                 playerSTR = ""
+#                 print("Enter the indexes of the piece you want to move. Example: H4")
+#                 while playerValidPiece == False:
+#                     playerPiece = input()
+#                     playerIndexes = reverseMapping(playerPiece)
+#                     if playerIndexes in theGame.blackIToP:
+#                         playerSTR = theGame.blackIToP[playerIndexes]
+#                         if len(theGame.blackAvailableMoves[playerSTR]) > 0:
+#                             playerValidPiece = True
+#                             playerSTR = theGame.blackIToP[playerIndexes]
+#                         else:
+#                             print("Please enter a piece that can move.")
+#                     else:
+#                         print("Please enter valid indexes of a black piece.")
+#                 print("Which indexes would you like to move it to?")
+#                 while playerValidMove == False:
+#                     playerMove = input()
+#                     playerMoveIndexes = reverseMapping(
+#                         playerMove)  # AI team is black
+#                     if playerMoveIndexes in theGame.blackAvailableMoves[playerSTR]:
+#                         validMovePiece = True
+#                         break
+#                     else:
+#                         print("Please enter valid indexes to move to")
+#                 print("Are you sure you want to make this move? Type in CHANGE if you would like to select a different move. Press enter to continue.")
+#                 con = input()
+#                 if con == "CHANGE":
+#                     continue
+#                 else:
+#                     playerMistake = False
+#                     theGame.move(playerSTR, playerMoveIndexes)
+#                     theGame.allMovesGen()
+#                     theGame.AIAdvantageEval()
+# else:
+#     while theGame.inPlay == True:
+#         if theGame.turn % 2 == 1:
+#             AIMove = AImove(theGame)
+#             print(
+#                 mapping(theGame.blackIndexes[AIMove[0]]), ' to ', mapping(AIMove[1]))
+#             theGame.move(AIMove[0], AIMove[1])
+#             theGame.allMovesGen()
+#             theGame.AIAdvantageEval()
+#         else:
+#             playerMistake = True
+#             while playerMistake == True:
+#                 playerMoveIndexes = -1
+#                 playerValidPiece = False
+#                 playerValidMove = False
+#                 theGame.allMovesGen()
+#                 theGame.printBoard()
+#                 playerSTR = ""
+#                 print("Enter the indexes of the piece you want to move. Example: H4")
+#                 while playerValidPiece == False:
+#                     playerPiece = input()
+#                     playerIndexes = reverseMapping(playerPiece)
+#                     if playerIndexes in theGame.whiteIToP:
+#                         playerSTR = theGame.whiteIToP[playerIndexes]
+#                         if len(theGame.whiteaVailableMoves[playerSTR]) > 0:
+#                             playerValidPiece = True
+#                             playerSTR = theGame.whiteIToP[playerIndexes]
+#                         else:
+#                             print("Please enter a piece that can move.")
+#                     else:
+#                         print("Please enter valid indexes of a white piece.")
+#                 print("Which indexes would you like to move it to?")
+#             while playerValidMove == False:
+#                 playerMove = input()
+#                 playerMoveIndexes = reverseMapping(
+#                     playerMove)  # AI team is black
+#                 if playerMoveIndexes in theGame.whiteaVailableMoves[playerSTR]:
+#                     validMovePiece = True
+#                     break
+#             else:
+#                 print("Please enter valid indexes to move to")
+#                 print("Are you sure you want to make this move? Type in CHANGE if you would like to select a different move. Press enter to continue.")
+#                 con = input()
+#                 if con == "CHANGE":
+#                     continue
+#                 else:
+#                     playerMistake = False
+#                     theGame.move(playerSTR, playerMoveIndexes)
+#                     theGame.allMovesGen()
+#                     theGame.AIAdvantageEval()
+# theGame.AIAdvantageEval()
+# a = []
+# b = a[4]
+# if theGame.AIAdvantage == 0:
+#     print("It's a tie")
+# elif theGame.AIAdvantage < 0:
+#     print("Checkmate, you win. Congradulations!!!")
+# else:
+#     print("Checkmate, you lose. Better luck next time!!!")
+# # both boards are printed correctly, working on getting the player to move correctly
+
+
+# def testMove(p: str, i: int):
+#     test2.move(p, i)
+#     test2.allMovesGen()
+#     test2.AIAdvantageEval()
+#     test2.printInfo()
+#     for i in range(3):
+#         print('\n')
+
+
+# print(reverseMapping('E4'))
+# # p5
+# print(reverseMapping('E5'))
+# # p5
+# print(reverseMapping('B5'))
+# # b2
+# print(reverseMapping('C6'))
+# # p6
+# print(reverseMapping('A4'))
+# # b2
+# print(reverseMapping('B5'))
+# # p7
+# print(reverseMapping('B3'))
+# # b2
+# testMove('p5', 44)
+# a = input()
+# testMove('p5', 34)
+# a = input()
+# testMove('b2', 31)
+# a = input()
+# testMove('p3', 22)
+# a = input()
+# testMove('b2', 40)
+# a = input()
+# testMove('p2', 11)
+# a = input()
+# testMove('b2', 51)
+
+# a = input()
+# testMove("p5", 44)
+# b = input()
+# testMove("p4", 33)
+# c = input()
+# testMove("b2", 31)
+# d = input()
+# print("WHITE BISHOP checking")
+# testMove("b1", 13)
+# e = input()
+# print("WHITE BISHOP pinning")
+# testMove("q", 64)
+# f = input()
+# testMove("p4", 44)
+# g = input()
+# testMove("q", 44)
+# h = input()
+# print("white rook pinning")

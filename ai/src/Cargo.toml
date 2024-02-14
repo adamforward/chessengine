@@ -1,0 +1,1 @@
+workspace = { members = ["chess_rust"] }
