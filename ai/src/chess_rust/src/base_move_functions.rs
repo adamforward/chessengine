@@ -1,12 +1,13 @@
 use crate::base_functions::map_piece_id_to_kind;
 use crate::types::{Board, Kind, Move, Piece, PieceId, Team};
+use std::vec::Vec;
 pub fn generate_available_moves(board: &Board, row: usize, col: usize) -> Vec<i32> {
     let piece = &board.full_board[row][col];
 
     match piece.kind {
         Kind::Pawn => match piece.team {
-            Team::Black => generate_pawn_moves_black(board, row, col),
-            Team::White => generate_pawn_moves_white(board, row, col),
+            Team::B => generate_pawn_moves_black(board, row, col),
+            Team::W => generate_pawn_moves_white(board, row, col),
             _ => Vec::new(),
         },
         Kind::Knight => generate_knight_moves(board, row, col),

@@ -1,4 +1,8 @@
-fn king_move_eliminator_white(board: &mut Board) {
+use crate::base_move_functions::generate_available_moves;
+use crate::types::{Board, Kind, Move, Piece, PieceId, Team};
+use std::collections::HashMap;
+use std::vec::Vec;
+pub fn king_move_eliminator_white(&mut board: Board) {
     // Assuming board.black_i_to_p is a HashMap<i32, PieceId> and board.white_available_moves is a HashMap<PieceId, Vec<i32>>
     let black_i_to_p = &board.black_i_to_p; // Reference to black piece positions
     let black_indexes = &board.black_indexes; // Assuming this is a similar structure holding black piece indexes
@@ -80,7 +84,7 @@ fn king_move_eliminator_white(board: &mut Board) {
     }
 }
 
-fn king_move_eliminator_black(board: &mut Board) {
+pub fn king_move_eliminator_black(board: &mut Board) {
     // Directly reference needed parts of the board to simplify access
     let white_i_to_p = &board.white_i_to_p; // Mapping from position to piece ID for black pieces
     let white_indexes = &board.white_indexes; // Positions of black pieces
@@ -249,7 +253,7 @@ fn w_rook_pinning(board: &mut Board, pinning: PieceId, overlap: &mut Vec<i32>) {
     }
 }
 
-fn b_rook_pinning(board: &mut Board, pinning: PieceId, overlap: &mut Vec<i32>) {
+pub fn b_rook_pinning(board: &mut Board, pinning: PieceId, overlap: &mut Vec<i32>) {
     let b_pos = board.black_indexes.get(&pinning).unwrap_or(&0);
     let b_row = b_pos / 10;
     let b_col = b_pos % 10;
@@ -337,7 +341,7 @@ fn b_rook_pinning(board: &mut Board, pinning: PieceId, overlap: &mut Vec<i32>) {
     }
 }
 
-fn w_rook_pinning(board: &mut Board, pinning: PieceId, overlap: &mut Vec<i32>) {
+pub fn w_rook_pinning(board: &mut Board, pinning: PieceId, overlap: &mut Vec<i32>) {
     let w_pos = board.white_indexes.get(&pinning).unwrap_or(&0);
     let w_row = w_pos / 10;
     let w_col = w_pos % 10;
@@ -425,7 +429,7 @@ fn w_rook_pinning(board: &mut Board, pinning: PieceId, overlap: &mut Vec<i32>) {
     }
 }
 
-fn w_bishop_pinning(
+pub fn w_bishop_pinning(
     board: &mut Board,
     pinning: PieceId,
     overlap: &mut Vec<i32>,
@@ -641,7 +645,7 @@ fn in_check_directional(board: &mut Board, pressuring: PieceId, team: Team, dire
     }
 }
 
-fn ep_white(board: &mut Board, move_piece: PieceId, indexes: i32) {
+pub fn ep_white(board: &mut Board, move_piece: PieceId, indexes: i32) {
     let initial_coords = *board.white_indexes.get(&move_piece).unwrap_or(&0);
     let old_row = initial_coords / 10;
     let old_col = initial_coords % 10;
@@ -679,9 +683,10 @@ fn ep_white(board: &mut Board, move_piece: PieceId, indexes: i32) {
 
     // Update points
     board.black_points -= 100;
+    reset_board(board);
 }
 
-fn ep_black(board: &mut Board, move_piece: PieceId, indexes: i32) {
+pub fn ep_black(board: &mut Board, move_piece: PieceId, indexes: i32) {
     let initial_coords = *board.black_indexes.get(&move_piece).unwrap_or(&0);
     let old_row = initial_coords / 10;
     let old_col = initial_coords % 10;
@@ -721,4 +726,13 @@ fn ep_black(board: &mut Board, move_piece: PieceId, indexes: i32) {
 
     // Update points
     board.white_points -= 100;
+    reset_board(board);
+}
+pub fn reset_board(board: &mut Board) {
+    for i in black_pieces.iter {
+        board.black_available_moves.insert(i, vec![]);
+    }
+    for i in white_pieces.iter {
+        board.white_available_moves.insert(i, vec![]);
+    }
 }

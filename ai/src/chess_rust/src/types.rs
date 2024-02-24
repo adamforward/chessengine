@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::vec::Vec;
 
 #[derive(Eq, Hash, PartialEq, Debug, Clone, Copy)]
 pub enum Kind {
@@ -46,22 +47,35 @@ pub enum PieceId {
     Q7,
 }
 
+#[derive(Eq, Hash, PartialEq, Debug, Clone, Copy)]
 pub enum Team {
     W,
     B,
     N,
 }
 
+#[derive(Eq, Hash, PartialEq, Debug, Clone, Copy)]
+pub enum GameState {
+    InPlay,
+    AiWin,
+    PlayerWin,
+    Stalemate,
+}
+
+#[derive(Eq, Hash, PartialEq, Debug, Clone, Copy)]
 pub struct Piece {
     pub team: Team,
     pub kind: Kind,
     pub value: i32,
 }
+
+#[derive(Eq, Hash, PartialEq, Debug, Clone, Copy)]
 pub struct Move {
     pub piece: PieceId,
     pub location: i32,
 }
 
+#[derive(Eq, Hash, PartialEq, Debug, Clone, Copy)]
 pub struct Board {
     pub moves_log: Vec<Move>,
     pub in_check_stored: bool,
@@ -87,14 +101,37 @@ pub struct Board {
     pub ai_advantage: f64,
 }
 
+#[derive(Eq, Hash, PartialEq, Debug, Clone, Copy)]
 pub struct TreeNode {
-    pub children: vec<TreeNode>,
-    pub parent: vec<TreeNode>,
+    pub children: Vec<TreeNode>,
+    pub parent: Vec<TreeNode>,
     pub board: Board,
     pub level: i32,
 }
 
+#[derive(Eq, Hash, PartialEq, Debug, Clone, Copy)]
 pub struct AdavantageMap {
-    advantage: f64,
-    board: Board,
+    pub advantage: f64,
+    pub board: Board,
+}
+//all of these types are for sending to front end.
+
+#[derive(Eq, Hash, PartialEq, Debug, Clone, Copy)]
+pub struct LocationToMove {
+    pub location: i32,
+    pub moves: Vec<i32>,
+}
+
+#[derive(Eq, Hash, PartialEq, Debug, Clone, Copy)]
+pub struct RenderPiece {
+    pub kind: Kind,
+    pub team: Team,
+}
+
+#[derive(Eq, Hash, PartialEq, Debug, Clone, Copy)]
+pub struct APIResponse {
+    pub boards_searched: String,
+    pub player_moves: Vec<LocationToMove>,
+    pub full_board: Vec<Vec<RenderPiece>>,
+    pub game_state: GameState,
 }

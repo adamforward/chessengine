@@ -1,26 +1,45 @@
-use crate::types::{Board, Kind, Move, Piece, PieceId, Team};
+use crate::types::{Board, Kind, Move, Piece, PieceId, Team, TreeNode};
 use std::collections::HashMap;
+
 pub fn map_piece_id_to_kind(piece: PieceId) -> Kind {
     match piece {
-        PieceId::P1 | PieceId::P2 | PieceId::P3 | PieceId::P4 |
-        PieceId::P5 | PieceId::P6 | PieceId::P7 | PieceId::P8 => Kind::Pawn,
-        
-        PieceId::K1 | PieceId::K2 | PieceId::K3 | PieceId::K4 |
-        PieceId::K5 | PieceId::K6 | PieceId::K7 | PieceId::K8 |
-        PieceId::K9 | PieceId::K10 => Kind::Knight,
-        
+        PieceId::P1
+        | PieceId::P2
+        | PieceId::P3
+        | PieceId::P4
+        | PieceId::P5
+        | PieceId::P6
+        | PieceId::P7
+        | PieceId::P8 => Kind::Pawn,
+
+        PieceId::K1
+        | PieceId::K2
+        | PieceId::K3
+        | PieceId::K4
+        | PieceId::K5
+        | PieceId::K6
+        | PieceId::K7
+        | PieceId::K8
+        | PieceId::K9
+        | PieceId::K10 => Kind::Knight,
+
         PieceId::B1 | PieceId::B2 => Kind::Bishop,
-        
+
         PieceId::K => Kind::King,
-        
-        PieceId::Q | PieceId::Q1 | PieceId::Q2 | PieceId::Q3 |
-        PieceId::Q4 | PieceId::Q5 | PieceId::Q6 | PieceId::Q7 => Kind::Queen,
-        
+
+        PieceId::Q
+        | PieceId::Q1
+        | PieceId::Q2
+        | PieceId::Q3
+        | PieceId::Q4
+        | PieceId::Q5
+        | PieceId::Q6
+        | PieceId::Q7 => Kind::Queen,
+
         PieceId::R1 | PieceId::R2 => Kind::Rook,
-        
+
         _ => Kind::Empty,
     }
-    
 }
 
 pub fn init_board(ai_team: bool) -> Board {
@@ -511,38 +530,37 @@ pub fn init_board(ai_team: bool) -> Board {
         turn: 0,
     };
 }
-fn primes(col:i32) -> i32{
-    let primes=Vec::vec![2,3,5,7,11,13,17,19];
+pub fn primes(col: i32) -> i32 {
+    let primes = vec![2, 3, 5, 7, 11, 13, 17, 19];
     return primes[col];
 }
-fn primes1(p:PieceId) -> i32{
-        match p{
-            PieceId::P1 => 2,
-            PieceId::P2 => 3,
-            PieceId::P3 => 5,
-            PieceId::P4 => 7,
-            PieceId::P5 => 11,
-            PieceId::P6 => 13,
-            PieceId::P7 => 17,
-            PieceId::P8 => 19,
-            _ => Kind::1,
-        }
-        return p(PieceId)
+pub fn primes1(p: PieceId) -> i32 {
+    match p {
+        PieceId::P1 => 2,
+        PieceId::P2 => 3,
+        PieceId::P3 => 5,
+        PieceId::P4 => 7,
+        PieceId::P5 => 11,
+        PieceId::P6 => 13,
+        PieceId::P7 => 17,
+        PieceId::P8 => 19,
+        _ => 1,
+    }
 }
-fn pawn_to_queen(p:PieceId)-> i32{
-        match p {
-            PieceId::P1 => Kind::Q1,
-            PieceId::P2 => Kind::Q2,
-            PieceId::P3 => Kind::Q3,
-            PieceId::P4 => Kind::Q4,
-            PieceId::P5 => Kind::Q5,
-            PieceId::P6 => Kind::Q6,
-            PieceId::P7 => Kind::Q7,
-            PieceId::P8 => Kind::Q8,
-            _ => Kind::Empty,
-        }
+pub fn pawn_to_queen(p: PieceId) -> Kind {
+    match p {
+        PieceId::P1 => Kind::Q1,
+        PieceId::P2 => Kind::Q2,
+        PieceId::P3 => Kind::Q3,
+        PieceId::P4 => Kind::Q4,
+        PieceId::P5 => Kind::Q5,
+        PieceId::P6 => Kind::Q6,
+        PieceId::P7 => Kind::Q7,
+        PieceId::P8 => Kind::Q8,
+        _ => Kind::Empty,
+    }
 }
-fn pawn_to_knight(p:PieceId)-> i32{
+pub fn pawn_to_knight(p: PieceId) -> Kind {
     match p {
         PieceId::P1 => Kind::K3,
         PieceId::P2 => Kind::K4,
@@ -554,9 +572,9 @@ fn pawn_to_knight(p:PieceId)-> i32{
         PieceId::P8 => Kind::K10,
         _ => Kind::Empty,
     }
-    return p(PieceId)
+    return p(PieceId);
 }
-fn mapping(n: i32) -> String {
+pub fn mapping(n: i32) -> String {
     let mut n = n.abs(); // Take the absolute value if n is negative
 
     if n == 99 {
@@ -581,7 +599,39 @@ fn mapping(n: i32) -> String {
     }
 }
 
-pub fn init_tree_node(curr &Board, parent &TreeNode, level:i32){
-    let children vec<Board>=Vec::New();
-    return TreeNode(children, parent, curr, level)
+pub fn init_tree_node(curr: &Board, parent: &Vec<TreeNode>, level: &i32) {
+    let children: Vec<Board> = vec![];
+    return TreeNode {
+        children,
+        parent,
+        curr,
+        level,
+    };
+}
+pub fn print_info(&board: Board) {
+    println!("Board Information:");
+    println!("In Check Stored: {}", board.in_check_stored);
+    println!("AI Team is White: {}", board.ai_team_is_white);
+    println!("In Play: {}", board.in_play);
+    println!("Turn: {}", board.turn);
+    println!("Black Points: {}", board.black_points);
+    println!("White Points: {}", board.white_points);
+    println!("AI Advantage: {}", board.ai_advantage);
+
+    println!("Black Indexes: {:?}", board.black_indexes);
+    println!("White Indexes: {:?}", board.white_indexes);
+    println!("Black I to P: {:?}", board.black_i_to_p);
+    println!("White I to P: {:?}", board.white_i_to_p);
+
+    println!("White Piece IDs: {:?}", board.white_piece_ids);
+    println!("Black Piece IDs: {:?}", board.black_piece_ids);
+
+    // Assuming you want to print full_board as well
+    for (i, row) in board.full_board.iter().enumerate() {
+        print!("Row {}: ", i);
+        for piece in row {
+            print!("{:?} ", piece);
+        }
+        println!(); // Newline for next row
+    }
 }
