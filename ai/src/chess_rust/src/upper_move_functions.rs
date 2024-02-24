@@ -149,7 +149,7 @@ pub fn all_moves_gen(&mut board:Board){
             b_king_moves.remove(index);
         }
     }
-    if w_pinned_vectors.length()>0{
+    if w_pinned_vectors.len()>0{
         for (index, &element) in w_pinned_pieces{
             let mut overlap:vec<i32>=[];
             let piece=board.white_i_to_p.get(element);
@@ -160,7 +160,7 @@ pub fn all_moves_gen(&mut board:Board){
             board.white_available_moves.insert(piece, overlap);
         }
     }
-    if b_pinned_vectors.length()>0{
+    if b_pinned_vectors.len()>0{
         for (index, &element) in b_pinned_pieces{
             let mut overlap:vec<i32>=[];
             let piece=board.black_i_to_p.get(element);
@@ -197,7 +197,7 @@ pub fn all_moves_gen(&mut board:Board){
     king_move_eliminator_white(&mut board);
 }
 
-pub fn move(&mut board:Board, move_piece:PieceId, indexes:i32, pawn_premotion_queen:bool){
+pub fn move_piece(&mut board:Board, move_piece:PieceId, indexes:i32, pawn_premotion_queen:bool){
     board.in_check_stored=false;
     if board.turn%2==0{
         let initial_coords=board.white_indexes.get(move_piece);

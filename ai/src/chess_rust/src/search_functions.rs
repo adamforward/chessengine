@@ -1,6 +1,6 @@
 use std::vec::Vec;
 use std::collections::HashMap;
-use crate::upper_move_functions::{all_moves_gen, move};
+use crate::upper_move_functions::{all_moves_gen, move_piece};
 use crate::ai_functions::{board_position_advantage_eval, game_still_going};
 use crate::types::{Board, Kind, Move, Piece, PieceId, TreeNode};
 
@@ -9,13 +9,13 @@ fn generate_top_moves(curr_game: &mut Board, num_moves: i32)->Vec<Board> {
     if game_still_going(curr_game)!=0{
         curr_game.ai_advantage=game_still_going(curr_game); 
     }
-    let mut advantage_map:Vec<AdavantageMap>=vec::new();
+    let mut advantage_map:Vec<AdavantageMap>=vec![];
     let place_holder=curr_game.clone();
     if curr_game.turn%2==0{
         for &i in curr_game.white_pieces.iter_mut{
             let moves=white_available_moves.get(i).unwrap_or(vec![]);
             for &j in moves.iter_mut{
-                move(curr_game, i, j);
+                move_piece(curr_game, i, j);
                 let potential_move=curr_game.clone();
                 all_moves_gen(potential_move);
                 if game_still_going(potential_move)==100000{
@@ -39,7 +39,7 @@ fn generate_top_moves(curr_game: &mut Board, num_moves: i32)->Vec<Board> {
         for i in curr_game.black_pieces.iter_mut{
             let moves=black_available_moves.get(i).unwrap_or(vec![]);
             for &j in moves.iter_mut{
-                move(curr_game, i, j);
+                move_piece(curr_game, i, j);
                 let potential_move=curr_game.clone();
                 all_moves_gen(potential_move);
                 if game_still_going(potential_move)==100000{
@@ -59,7 +59,7 @@ fn generate_top_moves(curr_game: &mut Board, num_moves: i32)->Vec<Board> {
             }
     }
     }
-    let re:Vec<AdavantageMap>=vec::New()
+    let re:Vec<AdavantageMap>=vec![]
     for i in advantage_map.iter_mut{
         re.sort(i.advantage);
         if (ai_team_is_white && board.turn==0) || (!ai_team_is_white && board.turn==1){
@@ -90,7 +90,7 @@ fn generate_top_moves(curr_game: &mut Board, num_moves: i32)->Vec<Board> {
 fn add_branches(game:&mut TreeNode, num_moves:i32){
     let children=generate_top_moves(game, num_moves);
     for i in children.iter{
-        game.children=TreeNode{vec::New, game, i.board, game.level+1}
+        game.children=TreeNode{Vec::New, game, i.board, game.level+1}
     }
 }
 fn search(curr_game:&mut TreeNode, depth:i32, width:i32, alpha_beta:f64, &mut mini_max:f64)->f64{
@@ -148,10 +148,10 @@ pub fn ai_move(&mut board:Board, difficulty:i32)->Board{
 pub fn player_move(&mut board:Board, start_indexes:i32, end_indexes:i32){
     if board.ai_team_is_white{
         let piece=board.black_i_to_p.get(start_indexes).unwrap_or(PieceId::Empty);
-        move(board, piece, end_indexes);
+        move_piece(board, piece, end_indexes);
     }
     else{
         let piece=board.black_i_to_p.get(start_indexes);
-        move(board, piece, end_indexes).unwrap_or(PieceId::Empty);
+        move_piece(board, piece, end_indexes).unwrap_or(PieceId::Empty);
     }
 }
