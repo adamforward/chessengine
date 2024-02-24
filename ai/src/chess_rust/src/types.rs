@@ -45,6 +45,8 @@ pub enum PieceId {
     Q5,
     Q6,
     Q7,
+    Q8,
+    Q9,
 }
 
 #[derive(Eq, Hash, PartialEq, Debug, Clone, Copy)]

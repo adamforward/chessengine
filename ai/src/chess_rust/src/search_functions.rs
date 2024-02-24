@@ -68,7 +68,7 @@ fn generate_top_moves(curr_game: &mut Board, num_moves: i32)->Vec<Board> {
         else{
             i.board.ai_advantage=i.advantage;
         }
-        if re.length()<num_moves || num_moves==-1{
+        if re.len()<num_moves || num_moves==-1{
             re.push(i);
         }
         else{
@@ -80,7 +80,7 @@ fn generate_top_moves(curr_game: &mut Board, num_moves: i32)->Vec<Board> {
 
     }
     for i in re.iter_mut{
-        if i+1<re[re.length()-1]{
+        if i+1<re[re.len()-1]{
             re.remove(i);
         }
     }

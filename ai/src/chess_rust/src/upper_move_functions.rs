@@ -28,8 +28,8 @@ pub fn all_moves_gen(&mut board:Board){
     let w_king_index = board.white_indexes.get(&PieceId::K);
     
     // Safely perform integer division after ensuring values are available
-    let mut w_king_moves = generate_available_moves(board, w_king_index / 10 as usize, w_king_index % 10 as usize);
-    let mut b_king_moves = generate_available_moves(board, b_king_index / 10 as usize, b_king_index % 10 as usize);
+    let mut w_king_moves = generate_available_moves(&board, w_king_index / 10 as usize, w_king_index % 10 as usize);
+    let mut b_king_moves = generate_available_moves(&board, b_king_index / 10 as usize, b_king_index % 10 as usize);
     
     // Initialize over_w and over_b as empty vectors
     let mut over_w: Vec<i32> = vec![];
@@ -82,7 +82,7 @@ pub fn all_moves_gen(&mut board:Board){
     }
     for i in board.black_piece_ids{
         let piece=i;
-        let &piece_index = board.black_indexes.get(&piece_id);
+        let piece_index = board.black_indexes.get(&piece_id).unwrap_or(-1);
         let curr_row=indexes/10;
         let curr_col=indexes%10;
         let mut all_moves=generate_available_moves(&board, curr_row, curr_col);
