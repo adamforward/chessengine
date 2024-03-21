@@ -665,11 +665,11 @@ class board:
                     if j in allMoves:
                         overB.append(j)
             # looking to modify this function, only need to check whether or not q, r, b are pressuring king
-            if bKS == True and allMoves != None:  # can QS castle
-                if 6 in allMoves or 5 in allMoves or 4 in allMoves or 7 in allMoves:
+            if bKS == True and allMoves != None:
+                if (pieceType == 'p' and (currRow+currCol) == 17 or (currRow+currCol) == 14) or (6 in allMoves or 5 in allMoves or 4 in allMoves or 7 in allMoves):
                     bKS = False
-            if bKS == True and allMoves != None:  # can KS castle
-                if 4 in allMoves or 3 in allMoves or 2 in allMoves or 1 in allMoves or 0 in allMoves:
+            if bKS == True and allMoves != None:
+                if (pieceType == 'p' and (currRow+currCol) == 14 and (currRow+currCol == 10)) or (4 in allMoves or 3 in allMoves or 2 in allMoves or 1 in allMoves or 0 in allMoves):
                     bQS = False
         for i in self.blackPieces:
             if "K" in i:
@@ -716,10 +716,10 @@ class board:
                     if j in allMoves:
                         overW.append(j)
             if wKS == True and allMoves != None:  # can QS castle
-                if 76 in allMoves or 75 in allMoves or 74 in allMoves or 77 in allMoves:
+                if (pieceType == 'p' and (currRow+currCol) == 67 or (currRow+currCol) == 64) or 76 in allMoves or 75 in allMoves or 74 in allMoves or 77 in allMoves:
                     wKS = False
             if wQS == True and allMoves != None:
-                if 74 in allMoves or 73 in allMoves or 72 in allMoves or 71 in allMoves or 70 in allMoves:
+                if (pieceType == 'p' and (currRow+currCol) == 64 and (currRow+currCol == 60)) or 74 in allMoves or 73 in allMoves or 72 in allMoves or 71 in allMoves or 70 in allMoves:
                     wQS = False
         if bKingMoves != None:
             for i in overB:
@@ -1027,6 +1027,8 @@ class board:
         # team corresponds to team in check
         if team == "w":  # either has to capture the piece or move the king.
             for i in self.blackPieces:  # if white is in check
+                if i == "K":
+                    continue
                 if self.whiteIndexes[pressuring] in self.blackAvailableMoves[i]:
                     self.blackAvailableMoves[i] = [
                         self.whiteIndexes[pressuring]]
@@ -1034,6 +1036,8 @@ class board:
                     self.blackAvailableMoves[i] = []
         else:
             for i in self.whitePieces:  # if white is in check
+                if i == "K":
+                    continue
                 if self.blackIndexes[pressuring] in self.whiteaVailableMoves[i]:
                     self.whiteaVailableMoves[i] = self.blackIndexes[pressuring]
                 else:
@@ -1259,6 +1263,10 @@ class board:
                     self.prime2 = self.prime2*3
                 if initialCoords == 74:
                     self.prime2 = self.prime2*5
+                if newIndexes == 0:
+                    self.prime2 = self.prime2*7
+                if newIndexes == 7:
+                    self.prime2 = self.prime2*11
                 if self.fullBoard[oldRow][oldCol].kind == 'p':
                     if oldCol != newCol and self.fullBoard[newRow][newCol].team == 'n':
                         self.EPWhite(movePiece, indexes)
@@ -1332,6 +1340,11 @@ class board:
                     self.prime2 = self.prime2*7
                 if movePiece == "r2":
                     self.prime2 = self.prime2*11
+                if newIndexes == 70:  # if they take rook before its moved
+                    self.prime2 = self.prime2*2  # 2 corresponds to WR1
+                if newIndexes == 77:
+                    self.prime2 = self.prime2*3
+
                 # old piece refers to the one that's being captured.
                 oldpoints = self.fullBoard[newRow][newCol].val
                 if oldpoints > 0:  # if a black piece is captured

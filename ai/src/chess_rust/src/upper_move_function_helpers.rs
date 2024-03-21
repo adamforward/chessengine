@@ -1,90 +1,14 @@
-use crate::base_move_functions::generate_available_moves;
-use crate::types::{Board, Kind, Move, Piece, PieceId, Team};
-use std::collections::HashMap;
-use std::vec::Vec;
-pub fn king_move_eliminator_white(&mut board: Board) {
-    // Assuming board.black_i_to_p is a HashMap<i32, PieceId> and board.white_available_moves is a HashMap<PieceId, Vec<i32>>
-    let black_i_to_p = &board.black_i_to_p; // Reference to black piece positions
-    let black_indexes = &board.black_indexes; // Assuming this is a similar structure holding black piece indexes
-    let full_board = &board.full_board; // Reference to the game board
-
-    if let Some(king_moves) = board.white_available_moves.get_mut(&PieceId::K) {
-        let mut to_remove = Vec::new(); // To avoid borrowing issues during iteration
-
-        for &i in king_moves.iter() {
-            let i_minus_11 = i - 11;
-            let i_minus_9 = i - 9;
-            if black_indexes.contains_key(&i_minus_11) {
-                if let Some(piece_id) = black_i_to_p.get(&i_minus_11) {
-                    if matches!(
-                        piece_id,
-                        PieceId::P1
-                            | PieceId::P2
-                            | PieceId::P3
-                            | PieceId::P4
-                            | PieceId::P5
-                            | PieceId::P6
-                            | PieceId::P7
-                            | PieceId::P8
-                    ) {
-                        to_remove.push(i);
-                    }
-                }
-            }
-
-            if black_indexes.contains_key(&i_minus_9) {
-                if let Some(piece_id) = black_i_to_p.get(&i_minus_9) {
-                    if matches!(
-                        piece_id,
-                        PieceId::P1
-                            | PieceId::P2
-                            | PieceId::P3
-                            | PieceId::P4
-                            | PieceId::P5
-                            | PieceId::P6
-                            | PieceId::P7
-                            | PieceId::P8
-                    ) {
-                        to_remove.push(i);
-                    }
-                }
-            }
-
-            // King proximity check
-            if let Some(king_index) = black_indexes.get(&PieceId::K) {
-                if (king_index % 10 - i % 10).abs() <= 1 && (king_index / 10 - i / 10).abs() <= 1 {
-                    to_remove.push(i);
-                }
-            }
-
-            // Assuming full_board[i / 10][i % 10] gives you a Piece struct with a `team` field
-            let piece_pos = (i / 10) as usize;
-            let piece_col = (i % 10) as usize;
-            if piece_pos < 8 && full_board[piece_pos][piece_col].team == Team::B {
-                // Your Python code seems to attempt to handle knight moves here, but it's not clear how
-                // Assuming you have a function to get knight moves
-                let moves = generate_knight_moves(board, piece_pos, piece_col);
-                for &j in moves.iter() {
-                    if let Some(k1_index) = black_indexes.get(&PieceId::K1) {
-                        if j == *k1_index {
-                            to_remove.push(i);
-                        }
-                    }
-                    if let Some(k2_index) = black_indexes.get(&PieceId::K2) {
-                        if j == *k2_index {
-                            to_remove.push(i);
-                        }
-                    }
-                }
-            }
-        }
+use crate::base_move_functions::generate_knight_moves;
+use crate::types::{Board, Kind, Piece, PieceId, Team};
+pub fn king_move_eliminator_white(board: Board) {
+    let mut king_moves=board.
 
         // Remove illegal moves
-        king_moves.retain(|&i| !to_remove.contains(&i));
+        king_moves.retain(|i| !to_remove.contains(i));
     }
 }
 
-pub fn king_move_eliminator_black(board: &mut Board) {
+pub fn king_move_eliminator_black(mut board: Board) {
     // Directly reference needed parts of the board to simplify access
     let white_i_to_p = &board.white_i_to_p; // Mapping from position to piece ID for black pieces
     let white_indexes = &board.white_indexes; // Positions of black pieces
@@ -96,9 +20,10 @@ pub fn king_move_eliminator_black(board: &mut Board) {
             // Calculate potential threat positions
             let threat_pos_down_left = move_pos - 11;
             let threat_pos_down_right = move_pos - 9;
-
+            let threat_pos_down_left = threat_pos_down_left as usize;
+            let threat_pos_down_right = threat_pos_down_right as usize;
             // Check for pawn threats
-            if let Some(&piece_id) = black_i_to_p.get(&threat_pos_down_left) {
+            if let Some(&piece_id) = board.black_i_to_p.get(&threat_pos_down_left) {
                 if matches!(
                     piece_id,
                     PieceId::P1
@@ -130,7 +55,8 @@ pub fn king_move_eliminator_black(board: &mut Board) {
             }
 
             // Proximity to black king
-            if let Some(&king_pos) = black_indexes.get(&PieceId::K) {
+            if let Some(&king_pos) = board.black_indexes.get(&PieceId::K) {
+                let i32 
                 if (king_pos % 10 - move_pos % 10).abs() <= 1
                     && (king_pos / 10 - move_pos / 10).abs() <= 1
                 {
@@ -165,7 +91,7 @@ pub fn king_move_eliminator_black(board: &mut Board) {
     }
 }
 
-fn w_rook_pinning(board: &mut Board, pinning: PieceId, overlap: &mut Vec<i32>) {
+fn w_rook_pinning(mut board: Board, pinning: PieceId, mut overlap: Vec<i32>) {
     let w_pos = board.white_indexes.get(&pinning).unwrap_or(&0);
     let w_row = w_pos / 10;
     let w_col = w_pos % 10;
@@ -246,188 +172,100 @@ fn w_rook_pinning(board: &mut Board, pinning: PieceId, overlap: &mut Vec<i32>) {
     // Assuming the `moveVector` somehow influences the white_available_moves
     // This could be a complex integration depending on your data structures
     // For simplicity, assuming we just update the moves for `pinning` PieceId
-    if done {
+    if done{
         if let Some(moves) = board.white_available_moves.get_mut(&pinning) {
             *moves = move_vector;
         }
     }
 }
 
-pub fn b_rook_pinning(board: &mut Board, pinning: PieceId, overlap: &mut Vec<i32>) {
-    let b_pos = board.black_indexes.get(&pinning).unwrap_or(&0);
-    let b_row = b_pos / 10;
-    let b_col = b_pos % 10;
-    let k_pos = board.white_indexes.get(&PieceId::K).unwrap_or(&0);
-    let k_row = k_pos / 10;
-    let k_col = k_pos % 10;
-    let mut p_index = -1;
-    let mut move_vector: Vec<i32> = vec![*b_pos];
+// pub fn w_rook_pinning(mut board: Board, pinning: PieceId, mut overlap: Vec<i32>) {
+//     let w_pos = board.white_indexes.get(&pinning).unwrap_or(&0);
+//     let w_row = w_pos / 10;
+//     let w_col = w_pos % 10;
+//     let k_pos = board.black_indexes.get(&PieceId::K).unwrap_or(&0);
+//     let k_row = k_pos / 10;
+//     let k_col = k_pos % 10;
+//     let mut p_index = -1;
+//     let mut move_vector: Vec<i32> = vec![*w_pos];
 
-    if b_col == k_col {
-        // Column alignment
-        let magnitude = (k_row as i32 - b_row as i32).abs();
-        let direction = if k_row > b_row { 1 } else { -1 };
-        let mut done = false;
+//     if w_col == k_col {
+//         // Column alignment
+//         let magnitude = (k_row as i32 - w_row as i32).abs();
+//         let direction = if k_row > w_row { 1 } else { -1 };
+//         let mut done = false;
 
-        for i in 1..=magnitude {
-            let j = i * direction;
-            match board
-                .full_board
-                .get((b_row as i32 + j) as usize)
-                .and_then(|r| r.get(b_col as usize))
-            {
-                Some(piece) if piece.team == Team::B => {
-                    if magnitude - i == 1 {
-                        overlap.push((b_row as i32 + j) * 10 + b_col as i32);
-                    }
-                    return;
-                }
-                Some(piece) if piece.team == Team::W && done => {
-                    return;
-                }
-                Some(piece) if piece.team == Team::W && !done => {
-                    p_index = (b_row as i32 + j) * 10 + b_col as i32;
-                    done = true;
-                }
-                _ => move_vector.push((b_row as i32 + j) * 10 + b_col as i32),
-            }
-        }
+//         for i in 1..=magnitude {
+//             let j = i * direction;
+//             match board
+//                 .full_board
+//                 .get((w_row as i32 + j) as usize)
+//                 .and_then(|r| r.get(w_col as usize))
+//             {
+//                 Some(piece) if piece.team == Team::W => {
+//                     if magnitude - i == 1 {
+//                         overlap.push((w_row as i32 + j) * 10 + w_col as i32);
+//                     }
+//                     return;
+//                 }
+//                 Some(piece) if piece.team == Team::B && done => {
+//                     return;
+//                 }
+//                 Some(piece) if piece.team == Team::B && !done => {
+//                     p_index = (w_row as i32 + j) * 10 + w_col as i32;
+//                     done = true;
+//                 }
+//                 _ => move_vector.push((w_row as i32 + j) * 10 + w_col as i32),
+//             }
+//         }
 
-        if done {
-            move_vector.push(p_index);
-        }
-    } else {
-        // Row alignment
-        let magnitude = (k_col as i32 - b_col as i32).abs();
-        let direction = if k_col > b_col { 1 } else { -1 };
-        let mut done = false;
+//         if done {
+//             move_vector.push(p_index);
+//         }
+//     } else {
+//         // Row alignment
+//         let magnitude = (k_col as i32 - w_col as i32).abs();
+//         let direction = if k_col > w_col { 1 } else { -1 };
+//         let mut done = false;
 
-        for i in 1..=magnitude {
-            let j = i * direction;
-            match board
-                .full_board
-                .get(b_row as usize)
-                .and_then(|r| r.get((b_col as i32 + j) as usize))
-            {
-                Some(piece) if piece.team == Team::B => {
-                    if magnitude - i == 1 {
-                        overlap.push(b_row as i32 * 10 + b_col as i32 + j);
-                    }
-                    return;
-                }
-                Some(piece) if piece.team == Team::W && done => {
-                    return;
-                }
-                Some(piece) if piece.team == Team::W && !done => {
-                    p_index = b_row as i32 * 10 + b_col as i32 + j;
-                    done = true;
-                }
-                _ => move_vector.push(b_row as i32 * 10 + b_col as i32 + j),
-            }
-        }
+//         for i in 1..=magnitude {
+//             let j = i * direction;
+//             match board
+//                 .full_board
+//                 .get(w_row as usize)
+//                 .and_then(|r| r.get((w_col as i32 + j) as usize))
+//             {
+//                 Some(piece) if piece.team == Team::W => {
+//                     if magnitude - i == 1 {
+//                         overlap.push(w_row as i32 * 10 + w_col as i32 + j);
+//                     }
+//                     return;
+//                 }
+//                 Some(piece) if piece.team == Team::B && done => {
+//                     return;
+//                 }
+//                 Some(piece) if piece.team == Team::B && !done => {
+//                     p_index = w_row as i32 * 10 + w_col as i32 + j;
+//                     done = true;
+//                 }
+//                 _ => move_vector.push(w_row as i32 * 10 + w_col as i32 + j),
+//             }
+//         }
 
-        if done {
-            move_vector.push(p_index);
-        }
-    }
+//         if done {
+//             move_vector.push(p_index);
+//         }
+//     }
 
-    // Assuming the `moveVector` somehow influences the black_available_moves
-    // This could be a complex integration depending on your data structures
-    // For simplicity, assuming we just update the moves for `pinning` PieceId
-    if done {
-        if let Some(moves) = board.black_available_moves.get_mut(&pinning) {
-            *moves = move_vector;
-        }
-    }
-}
-
-pub fn w_rook_pinning(board: &mut Board, pinning: PieceId, overlap: &mut Vec<i32>) {
-    let w_pos = board.white_indexes.get(&pinning).unwrap_or(&0);
-    let w_row = w_pos / 10;
-    let w_col = w_pos % 10;
-    let k_pos = board.black_indexes.get(&PieceId::K).unwrap_or(&0);
-    let k_row = k_pos / 10;
-    let k_col = k_pos % 10;
-    let mut p_index = -1;
-    let mut move_vector: Vec<i32> = vec![*w_pos];
-
-    if w_col == k_col {
-        // Column alignment
-        let magnitude = (k_row as i32 - w_row as i32).abs();
-        let direction = if k_row > w_row { 1 } else { -1 };
-        let mut done = false;
-
-        for i in 1..=magnitude {
-            let j = i * direction;
-            match board
-                .full_board
-                .get((w_row as i32 + j) as usize)
-                .and_then(|r| r.get(w_col as usize))
-            {
-                Some(piece) if piece.team == Team::W => {
-                    if magnitude - i == 1 {
-                        overlap.push((w_row as i32 + j) * 10 + w_col as i32);
-                    }
-                    return;
-                }
-                Some(piece) if piece.team == Team::B && done => {
-                    return;
-                }
-                Some(piece) if piece.team == Team::B && !done => {
-                    p_index = (w_row as i32 + j) * 10 + w_col as i32;
-                    done = true;
-                }
-                _ => move_vector.push((w_row as i32 + j) * 10 + w_col as i32),
-            }
-        }
-
-        if done {
-            move_vector.push(p_index);
-        }
-    } else {
-        // Row alignment
-        let magnitude = (k_col as i32 - w_col as i32).abs();
-        let direction = if k_col > w_col { 1 } else { -1 };
-        let mut done = false;
-
-        for i in 1..=magnitude {
-            let j = i * direction;
-            match board
-                .full_board
-                .get(w_row as usize)
-                .and_then(|r| r.get((w_col as i32 + j) as usize))
-            {
-                Some(piece) if piece.team == Team::W => {
-                    if magnitude - i == 1 {
-                        overlap.push(w_row as i32 * 10 + w_col as i32 + j);
-                    }
-                    return;
-                }
-                Some(piece) if piece.team == Team::B && done => {
-                    return;
-                }
-                Some(piece) if piece.team == Team::B && !done => {
-                    p_index = w_row as i32 * 10 + w_col as i32 + j;
-                    done = true;
-                }
-                _ => move_vector.push(w_row as i32 * 10 + w_col as i32 + j),
-            }
-        }
-
-        if done {
-            move_vector.push(p_index);
-        }
-    }
-
-    // Assuming the `moveVector` somehow influences the white_available_moves
-    // This could be a complex integration depending on your data structures
-    // For simplicity, assuming we just update the moves for `pinning` PieceId
-    if done {
-        if let Some(moves) = board.white_available_moves.get_mut(&pinning) {
-            *moves = move_vector;
-        }
-    }
-}
+//     // Assuming the `moveVector` somehow influences the white_available_moves
+//     // This could be a complex integration depending on your data structures
+//     // For simplicity, assuming we just update the moves for `pinning` PieceId
+//     if done {
+//         if let Some(moves) = board.white_available_moves.get_mut(&pinning) {
+//             *moves = move_vector;
+//         }
+//     }
+// }
 
 pub fn w_bishop_pinning(
     board: &mut Board,
@@ -495,11 +333,11 @@ pub fn w_bishop_pinning(
     (move_vector, overlap.clone())
 }
 
-fn b_bishop_pinning(
-    board: &mut Board,
+pub fn b_bishop_pinning(
+    mut board: Board,
     pinning: PieceId,
-    overlap: &mut Vec<i32>,
-) -> (Vec<i32>, Vec<i32>) {
+    mut overlap: Vec<usize>,
+) -> (Vec<usize>, Vec<usize>) {
     let b_pos = board.black_indexes.get(&pinning).unwrap();
     let b_row = b_pos / 10;
     let b_col = b_pos % 10;
@@ -532,7 +370,7 @@ fn b_bishop_pinning(
         {
             if piece.team == Team::B {
                 if magnitude - i == 1 {
-                    overlap.push(r_inc + c_inc);
+                    overlap.push((r_inc + c_inc as usize);
                 }
                 return (vec![], overlap.clone());
             }
@@ -540,11 +378,10 @@ fn b_bishop_pinning(
             if piece.team == Team::W && done {
                 return (vec![], overlap.clone());
             } else if piece.team == Team::W && !done {
-                p_index = 10 * (b_row as isize + r_inc) as i32 + (b_col as isize + c_inc) as i32;
+                p_index = 10 * (b_row as isize + r_inc) + (b_col as isize + c_inc);
                 done = true;
             } else {
-                move_vector
-                    .push(10 * (b_row as isize + r_inc) as i32 + (b_col as isize + c_inc) as i32);
+                move_vector.push(10 * (b_row as isize + r_inc) + (b_col as isize + c_inc));
             }
         }
     }
@@ -645,18 +482,18 @@ fn in_check_directional(board: &mut Board, pressuring: PieceId, team: Team, dire
     }
 }
 
-pub fn ep_white(board: &mut Board, move_piece: PieceId, indexes: i32) {
+pub fn ep_white(board: Board, move_piece: PieceId, indexes: usizerust) {
     let initial_coords = *board.white_indexes.get(&move_piece).unwrap_or(&0);
     let old_row = initial_coords / 10;
     let old_col = initial_coords % 10;
     let new_i = indexes;
     let new_col = new_i % 10;
     let new_row = new_i / 10;
-    let captured_i = old_row * 10 + new_col;
+    let captured_i = old_row * 10 + new_col as usize;
     let old_piece = *board
         .black_i_to_p
         .get(&captured_i)
-        .unwrap_or(&PieceId::Empty); // Assuming default
+        .unwrap_or(&PieceId::Error); // Assuming default
 
     board.black_available_moves.remove(&old_piece);
     board.black_i_to_p.remove(&captured_i);
@@ -664,9 +501,9 @@ pub fn ep_white(board: &mut Board, move_piece: PieceId, indexes: i32) {
     if let Some(pos) = board.black_piece_ids.iter().position(|&id| id == old_piece) {
         board.black_piece_ids.remove(pos);
     }
-    board.white_indexes.insert(move_piece, new_i);
+    board.white_indexes.insert(move_piece, new_i as usize);
     board.white_i_to_p.remove(&initial_coords);
-    board.white_i_to_p.insert(new_i, move_piece);
+    board.white_i_to_p.insert(new_i as usize, move_piece);
 
     // Assuming `Piece` struct has a constructor or a default value
     let empty_piece = Piece {
@@ -729,10 +566,13 @@ pub fn ep_black(board: &mut Board, move_piece: PieceId, indexes: i32) {
     reset_board(board);
 }
 pub fn reset_board(board: &mut Board) {
-    for i in black_pieces.iter {
+    let board_blk_ids = board.black_piece_ids;
+    for i in board_blk_ids{
         board.black_available_moves.insert(i, vec![]);
     }
-    for i in white_pieces.iter {
+    let board_wht_ids = board.white_piece_ids;
+
+    for i in board_wht_ids{
         board.white_available_moves.insert(i, vec![]);
     }
 }
