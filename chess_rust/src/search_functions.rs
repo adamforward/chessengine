@@ -1,10 +1,12 @@
-use std::vec::Vec;
-use std::collections::HashMap;
+use std::{cell::RefCell, rc::Rc};
 use crate::upper_move_functions::{all_moves_gen, move_piece};
-use crate::ai_functions::{board_position_advantage_eval, game_still_going};
-use crate::types::{TreeNode, Board, AdavantageMap, PieceId};
+use crate::ai_functions::{ game_still_going};
+use crate::types::{TreeNode, TreeNodeRef, Board, AdavantageMap, PieceId};
 
-fn generate_top_moves(mut curr_game: Board, num_moves: i32, parent:Vec<TreeNode>, level:i32)->Vec<&TreeNode> {
+fn generate_top_moves(num_moves: i32, parent:TreeNode)->Vec<TreeNodeRef> {
+    let mut curr_game=parent.game.clone();
+    let level=parent.level;
+    let parent_ref=Some(Rc::new(RefCell::new(parent)));
     let new_info=all_moves_gen(&curr_game);
     if game_still_going(&curr_game, new_info.checking, &new_info.white_moves, &new_info.black_moves)!=0.0{
         curr_game.ai_advantage=game_still_going(&curr_game, new_info.checking, &new_info.white_moves, &new_info.black_moves); 
@@ -35,7 +37,7 @@ fn generate_top_moves(mut curr_game: Board, num_moves: i32, parent:Vec<TreeNode>
             }
         }
     }
-    let mut re:Vec<&TreeNode>=vec![];
+    let mut re:Vec<TreeNodeRef>=vec![];
     let ai_turn:bool;
     if ((curr_game.turn+1)%2==0 && curr_game.ai_team_is_white) || ((curr_game.turn+1)%2==1 && !curr_game.ai_team_is_white){
         ai_turn=true;
@@ -54,12 +56,12 @@ fn generate_top_moves(mut curr_game: Board, num_moves: i32, parent:Vec<TreeNode>
         }
         if ai_turn && game_still_going(&curr_game, new_info.checking, &new_info.white_moves, &new_info.black_moves)==100000.0{
             e.board.ai_advantage=1000000.0;
-            re.push(TreeNode::new(e.board.clone(), &parent, level));
+            re.push(Rc::new(RefCell::new(TreeNode { parent:parent_ref.clone(), children:vec![],game:e.board.clone(), level})));
             done=true;
         }
         if !ai_turn && game_still_going(&curr_game, new_info.checking, &new_info.white_moves, &new_info.black_moves)==-100000.0{
             e.board.ai_advantage=-1000000.0;
-            re.push(TreeNode::new(e.board.clone(), &parent, level));
+            re.push(Rc::new(RefCell::new(TreeNode {parent:parent_ref.clone(), children:vec![],game:e.board.clone(), level})));
             done=true;
         }
         let mut loss_count=0;
@@ -76,85 +78,70 @@ fn generate_top_moves(mut curr_game: Board, num_moves: i32, parent:Vec<TreeNode>
             }
         }
         if count<=num_moves && loss_count!=num_moves && !done {
-            re.push(TreeNode::new(e.board.clone(), &parent, level));
+            re.push(Rc::new(RefCell::new(TreeNode {parent:parent_ref.clone(), children:vec![],game:e.board.clone(), level})));
         }
         if loss_count==num_moves && ai_turn{
             let mut loss_re=e.board.clone();
             loss_re.ai_advantage=-1000000.0;
-            re.push(TreeNode::new(e.board.clone(), &parent, level));
+            re.push(Rc::new(RefCell::new(TreeNode {parent:parent_ref.clone(), children:vec![],game:e.board.clone(), level})));
         }
         if loss_count==num_moves && !ai_turn{
             let mut loss_re=e.board.clone();
             loss_re.ai_advantage=-1000000.0;
-            re.push(TreeNode::new(e.board.clone(), &parent, level));
+            re.push(Rc::new(RefCell::new(TreeNode {parent:parent_ref.clone(), children:vec![],game:e.board.clone(), level})));
         }
     }
     return re;
 }
 
-fn add_branches(board: TreeNode, num_moves:i32){
-    board.children=generate_top_moves(game.board, num_moves);
-    board.child
-}
-fn search(mut curr_game: TreeNode, depth:i32, width:i32, alpha_beta:f64, mut mini_max:f64)->f64{
-    if curr_game.level==depth || curr_game.in_play==false{
-        if curr_game.board.ai_advantage<mini_max{
-            return curr_game.board.ai_advantage; 
-        }
+fn clear_children(curr_game: &TreeNodeRef) {
+    let mut current = curr_game.clone();
+    while current.borrow().level != 0 {
+        current.borrow_mut().children = Vec::new();
+        let parent = Rc::clone(&current);
+        current = parent; 
     }
-    if curr_game.game.ai_advantage<alpha_beta{
-        mini_max=-2; 
-        while level>1{
-            curr_game.children=vec![];
-            curr_game=curr_game.parent;
-            level=level-1;
-        }
-        curr_game.ai_advantage=-2;
-        return mini_max; 
-    }
-    else{
-        if curr_game.ai_advantage!=-2{
-            add_branches(curr_game, width);
-            if mini_max>curr_game.ai_advantage{
-                mini_max=curr_game.ai_advantage;
-            }
-            for i in curr_game.children{
-                let mm=search(i, depth, width, alpha_beta, mini_max);
-                if mm==-2{
-                    break;
-                }
-                if mini_max>mm{
-                    mini_max=mm;
-                }
-            }
-        }
-    }
-    return mini_max;
+    current.borrow_mut().children = Vec::new(); 
 }
 
-pub fn ai_move(mut board:Board, difficulty:i32)->Board{
-    let potential_moves=generate_top_moves(board, -1);
-    let mut outcome=-10000000.0;
-    let mut alpha_beta=outcome;
-    let winner:Board;
-    for i in boards.iter{
-        let tree=TreeNode{vec![], vec![], i.board, 1}; 
-        let temp_search=search(tree, difficulty, difficulty/2, alpha_beta, outcome);
-        if temp_search>outcome{
-            outcome=temp_search;
-            alpha_beta=.5-outcome; 
-            winner=i;
+fn search(curr_game: &Rc<RefCell<TreeNode>>, depth: i32, width: i32, alpha_beta: f64, mut mini_max: f64) -> f64 {
+    let curr_game_borrowed = curr_game.borrow();
+    
+    if (curr_game_borrowed.level == depth || 
+        curr_game_borrowed.game.ai_advantage == 1000000.0 || 
+        curr_game_borrowed.game.ai_advantage == -1000000.0 || 
+        curr_game_borrowed.game.ai_advantage == 2000.0) && 
+        mini_max > alpha_beta {
+        if curr_game_borrowed.game.ai_advantage < mini_max {
+            return curr_game_borrowed.game.ai_advantage; 
+        }
+    } else if (curr_game_borrowed.level == depth || 
+               curr_game_borrowed.game.ai_advantage == 1000000.0 || 
+               curr_game_borrowed.game.ai_advantage == -1000000.0 || 
+               curr_game_borrowed.game.ai_advantage == 2000.0) && 
+              mini_max < alpha_beta {
+                clear_children(curr_game);
+    } else {
+        let cloned_game = curr_game.clone();
+        let children = generate_top_moves(width, cloned_game.borrow().clone());
+        
+        curr_game.borrow_mut().children = children.clone();
+        
+        if mini_max > curr_game_borrowed.game.ai_advantage {
+            mini_max = curr_game_borrowed.game.ai_advantage;
+        }
+
+        for child in children {
+            let mm = search(&child, depth, width, alpha_beta, mini_max);
+            if mini_max > mm {
+                mini_max = mm;
+            }
         }
     }
-    return winner; 
+    
+    mini_max
 }
-pub fn player_move(mut board:Board, start_indexes:i32, end_indexes:i32){
-    if board.ai_team_is_white{
-        let piece=board.black_i_to_p.get(start_indexes).unwrap_or(PieceId::Empty);
-        move_piece(board, piece, end_indexes);
-    }
-    else{
-        let piece=board.black_i_to_p.get(start_indexes);
-        move_piece(board, piece, end_indexes).unwrap_or(PieceId::Empty);
-    }
-}
+
+
+
+

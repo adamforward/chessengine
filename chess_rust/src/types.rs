@@ -1,3 +1,6 @@
+use std::{cell::RefCell, rc::Rc};
+
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Kind {
     Pawn,
@@ -121,8 +124,18 @@ impl AvailableMovesMap {
 }
 #[derive(Clone, Debug)]
 pub struct IToPMap {
-    hash: Vec<Option<PieceId>>,
+    pub hash: Vec<Option<PieceId>>,
 }
+
+#[derive(Clone, Debug)]
+pub struct TreeNode{
+    pub level:i32,
+    pub game:Board,
+    pub parent:Option<TreeNodeRef>,
+    pub children:Vec<TreeNodeRef>,
+}
+
+pub type TreeNodeRef = Rc<RefCell<TreeNode>>; //RefCell<T> and Cell<T> is a type that allows for interior mutability,
 
 impl IToPMap {
     pub fn new() -> Self {
@@ -163,19 +176,6 @@ pub struct Board {
     pub black_prime1: i32,
     pub prime2: i32,
     pub ai_advantage: f64,
-}
-
-pub struct TreeNode <'a>{
-    pub children: Vec<&'a TreeNode <'a>>,
-    pub parent: Option<&'a TreeNode<'a>>,
-    pub board: Board,
-    pub level: i32,
-}
-
-impl TreeNode <'a> {
-    pub fn new(b:Board, p:&Vec<TreeNode>, l:i32)->TreeNode<'a>{
-        return TreeNode<'a>{parent:p, children:vec![], level:l, board:b }
-    }
 }
 
 pub struct AllMovesGenRe {
