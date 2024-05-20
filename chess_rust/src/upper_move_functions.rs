@@ -15,7 +15,7 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
     // Castling conditions for White Queen Side
     let mut w_qs = board.prime2 % 5 != 0 && board.prime2 % 2 != 0 && board.full_board[7][1].team == Team::N && board.full_board[7][2].team == Team::N && board.full_board[7][3].team == Team::N;
     
-    let mut black_checking: Vec<PieceId> = Vec::new();
+    let black_checking: Vec<PieceId> = Vec::new();
     let mut white_checking: Vec<PieceId> = Vec::new();
     let mut b_pinned_vectors: Vec<Vec<usize>> = Vec::new();
     let mut w_pinned_vectors: Vec<Vec<usize>> = Vec::new();
@@ -38,10 +38,11 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
         let piece_index = board.white_indexes.get_index(*piece_id).unwrap();
         let curr_row = piece_index / 10;
         let curr_col = piece_index % 10;
+        
 
         // Adjusted to your available function signature and logic
         all_moves = generate_available_moves(&board, curr_row, curr_col); // Assuming this function exists and works as intended
-
+        over_b=find_overlap(&all_moves, &w_king_moves);
         let mut checking = false;
         if contains_element(&all_moves, b_king_index){
             re.checking=true;
@@ -52,7 +53,8 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
         if board.full_board[curr_row][curr_col].kind==Kind::Rook || board.full_board[curr_row][curr_col].kind==Kind::Queen && checking==false{
             let mut temp=w_rook_pinning(&board, *piece_id, &over_b);
             over_b=temp[1].clone();
-            let pinned_p=temp[0][temp.len()-1];
+            if temp[0].len()>0{
+            let pinned_p=temp[0][temp[0].len()-1];
             let length=temp[0].len()-1;
             temp[0].remove(length);
             if temp.len()>0{
@@ -60,18 +62,21 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
                 w_pinned_indexes.push(pinned_p);
             }
         }
-        over_b=find_overlap(&all_moves, &w_king_moves);
+        }
+        
         re.white_moves.insert_moves(*piece_id, &all_moves);
         if board.full_board[curr_row][curr_col].kind==Kind::Bishop || board.full_board[curr_row][curr_col].kind==Kind::Queen && checking==false{
             let mut temp=w_bishop_pinning(&board, *piece_id, &over_b);
             over_b=temp[1].clone();
-            let pinned_p=temp[0][temp.len()-1];
+            if temp[0].len()>0{
+            let pinned_p=temp[0][temp[0].len()-1];
             let length=temp[0].len()-1;
             temp[0].remove(length);
             if temp.len()>0{
                 b_pinned_vectors.push(temp[0].clone());
                 w_pinned_indexes.push(pinned_p);
             }
+        }
         }
         let castling_points=vec![7,6,5,4];
         for i in castling_points.iter(){
@@ -92,6 +97,7 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
         let curr_row=piece_index/10;
         let curr_col=piece_index%10;
         all_moves=generate_available_moves(&board, curr_row, curr_col);
+        over_w=find_overlap(&all_moves, &b_king_moves);
         let mut checking=false;
 
         if contains_element(&all_moves,board.white_indexes.get_index(PieceId::K).unwrap()){
@@ -104,7 +110,7 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
             let mut temp=b_rook_pinning(&board, piece, &over_w);
             over_w=temp[1].clone();
             let temp2=temp[0].clone();
-            if temp.len()>0{
+            if temp2.len()>0{
                 let pinned_p=temp2[temp.len()-1];
                 temp.remove(temp2.len()-1);
                 w_pinned_vectors.push(temp2);
@@ -117,14 +123,13 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
             let mut temp=b_bishop_pinning(&board, piece, &over_w);
             over_w=temp[1].clone();
             let temp2=temp[0].clone();
-            if temp.len()>0{
+            if temp2.len()>0{
                 let pinned_p=temp2[temp.len()-1];
                 temp.remove(temp2.len()-1);
                 w_pinned_vectors.push(temp2);
                 b_pinned_indexes.push(pinned_p);
             }
         }
-        over_w=find_overlap(&all_moves, &b_king_moves);
         re.black_moves.insert_moves(piece, &all_moves);
         let castling_points=vec![7,6,5,4];
         for i in castling_points.iter(){

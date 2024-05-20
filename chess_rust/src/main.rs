@@ -5,8 +5,11 @@ mod search_functions;
 mod types;
 mod upper_move_function_helpers;
 mod upper_move_functions;
-use crate::base_functions::init_board;
+mod test_board;
+
+use crate::test_board::{test_b};
 
 fn main() {
-    //here were just testing for now
+    test_b();
 }
+    

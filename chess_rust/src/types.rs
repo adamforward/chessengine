@@ -11,6 +11,20 @@ pub enum Kind {
     Bishop,
     Empty,
 }
+impl Kind {
+    pub fn to_string(&self) -> &str {
+        match self {
+            Kind::Pawn => "P",
+            Kind::Rook => "R",
+            Kind::Knight => "k",
+            Kind::King => "K",
+            Kind::Queen => "Q",
+            Kind::Bishop => "B",
+            Kind::Empty => "E",
+        }
+    }
+}
+
 #[derive(Clone, Debug, Copy, PartialEq)]
 pub enum PieceId {
     P1,
@@ -48,11 +62,60 @@ pub enum PieceId {
     Q9,
     Error,
 }
+impl PieceId {
+    pub fn to_string(&self) -> &str {
+        match self {
+            PieceId::P1 => "P1",
+            PieceId::P2 => "P2",
+            PieceId::P3 => "P3",
+            PieceId::P4 => "P4",
+            PieceId::P5 => "P5",
+            PieceId::P6 => "P6",
+            PieceId::P7 => "P7",
+            PieceId::P8 => "P8",
+            PieceId::K1 => "K1",
+            PieceId::K2 => "K2",
+            PieceId::K3 => "K3",
+            PieceId::K4 => "K4",
+            PieceId::K5 => "K5",
+            PieceId::K6 => "K6",
+            PieceId::K7 => "K7",
+            PieceId::K8 => "K8",
+            PieceId::K9 => "K9",
+            PieceId::K10 => "K10",
+            PieceId::B1 => "B1",
+            PieceId::B2 => "B2",
+            PieceId::R1 => "R1",
+            PieceId::R2 => "R2",
+            PieceId::K => "K",
+            PieceId::Q => "Q",
+            PieceId::Q1 => "Q1",
+            PieceId::Q2 => "Q2",
+            PieceId::Q3 => "Q3",
+            PieceId::Q4 => "Q4",
+            PieceId::Q5 => "Q5",
+            PieceId::Q6 => "Q6",
+            PieceId::Q7 => "Q7",
+            PieceId::Q8 => "Q8",
+            PieceId::Q9 => "Q9",
+            PieceId::Error => "Error",
+        }
+    }
+}
 #[derive(Clone, Debug, PartialEq, Copy)]
 pub enum Team {
     W,
     B,
     N,
+}
+impl Team {
+    pub fn to_string(&self) -> &str {
+        match self {
+            Team::W => "W",
+            Team::B => "B",
+            Team::N => "N",
+        }
+    }
 }
 #[derive(Clone, Debug)]
 pub enum GameState {
@@ -117,15 +180,8 @@ impl AvailableMovesMap {
             vec![] 
         }
     }
-    pub fn reset(&mut self) {
-        let num_variants = 39;
-        self.hash = vec![vec![]; num_variants];
-    }
 }
-#[derive(Clone, Debug)]
-pub struct IToPMap {
-    pub hash: Vec<Option<PieceId>>,
-}
+
 
 #[derive(Clone, Debug)]
 pub struct TreeNode{
@@ -137,9 +193,13 @@ pub struct TreeNode{
 
 pub type TreeNodeRef = Rc<RefCell<TreeNode>>; //RefCell<T> and Cell<T> is a type that allows for interior mutability,
 
+#[derive(Clone, Debug)]
+pub struct IToPMap {
+    pub hash: Vec<Option<PieceId>>,
+}
 impl IToPMap {
     pub fn new() -> Self {
-        let num_variants = 77;
+        let num_variants = 78;
         IToPMap {
             hash: vec![None; num_variants], 
         }

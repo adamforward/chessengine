@@ -141,7 +141,3 @@ fn search(curr_game: &Rc<RefCell<TreeNode>>, depth: i32, width: i32, alpha_beta:
     
     mini_max
 }
-
-
-
-
