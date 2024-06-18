@@ -1,6 +1,7 @@
-use crate::base_functions::{init_board};
-use crate::types::{Board, Piece, PieceId};
+use crate::base_functions::{init_board, map_piece_id_to_kind, find_non_overlap, find_overlap, contains_element};
+use crate::types::{Board, Piece, PieceId, Team, Kind, Move};
 use crate::upper_move_functions::{all_moves_gen, move_piece};
+use std::io;
 // use crate::base_move_functions::{generate_available_moves};
 fn reverse_mapping(b: &str) -> usize {
     match b {
@@ -15,7 +16,178 @@ fn reverse_mapping(b: &str) -> usize {
         _ => 100000,
     }
 }
-fn index_to_string(index: usize) -> String {
+
+fn reverse_mapping_2(b: &str) -> usize {
+    match b {
+        "a8" => 0,  "b8" => 1,  "c8" => 2,  "d8" => 3,  "e8" => 4,  "f8" => 5,  "g8" => 6,  "h8" => 7,
+        "a7" => 10, "b7" => 11, "c7" => 12, "d7" => 13, "e7" => 14, "f7" => 15, "g7" => 16, "h7" => 17,
+        "a6" => 20, "b6" => 21, "c6" => 22, "d6" => 23, "e6" => 24, "f6" => 25, "g6" => 26, "h6" => 27,
+        "a5" => 30, "b5" => 31, "c5" => 32, "d5" => 33, "e5" => 34, "f5" => 35, "g5" => 36, "h5" => 37,
+        "a4" => 40, "b4" => 41, "c4" => 42, "d4" => 43, "e4" => 44, "f4" => 45, "g4" => 46, "h4" => 47,
+        "a3" => 50, "b3" => 51, "c3" => 52, "d3" => 53, "e3" => 54, "f3" => 55, "g3" => 56, "h3" => 57,
+        "a2" => 60, "b2" => 61, "c2" => 62, "d2" => 63, "e2" => 64, "f2" => 65, "g2" => 66, "h2" => 67,
+        "a1" => 70, "b1" => 71, "c1" => 72, "d1" => 73, "e1" => 74, "f1" => 75, "g1" => 76, "h1" => 77,
+        "O-O"=>99, "O-O-O"=>100,
+        _ => 100000,
+    }
+}
+
+fn reverse_row_mapping(b:&str)->usize{
+    match b{
+    "8"=>0, "7"=>10, "6"=>20, "5"=>30, "4"=>40, "3"=>50, "2"=>60, "1"=>70, _ => 100000,
+    }
+}
+
+fn reverse_col_mapping(b:&str)->usize{
+    match b{
+        "a"=>0, "b"=>1, "c"=>2, "d"=>3, "e"=>4, "f"=>5, "g"=>6, "h"=>7, _ =>100000,
+    }
+}
+
+fn map_standard_format_to_kind(input: &str)->Kind{
+    match input{
+        "N"=>Kind::Knight,
+        "B"=>Kind::Bishop,
+        "Q"=>Kind::Queen,
+        "R"=>Kind::Rook,
+        "K"=>Kind::King,
+        _=>Kind::Pawn,
+    }
+}
+
+fn process_moves_string(input: &str) -> Vec<String> {
+    return input
+        .split_whitespace()
+        .filter(|s| !s.contains('.'))
+        .map(|s| s.to_string())
+        .collect();
+} // moving 1. e4 e5  2. Bc4 d5  3. d4 c5  4. Nf3 exd4  5. Nxd4 Nf6 format to my data model
+
+//white moves will have an even index still
+
+fn split_string_to_chars(s: &str) -> Vec<String> {
+    s.chars().map(|c| c.to_string()).collect()
+}
+
+fn map_standard_format_to_data_model(b:Board, standard_format_move:&str)->Move{
+    if standard_format_move=="O-O-O"{
+        return Move {piece:PieceId::K, location:100};
+    }
+    if standard_format_move=="O-O"{
+        return Move {piece:PieceId::K, location:99};
+    }
+    let rows=vec!["8", "7", "6", "5", "4", "3", "2", "1"];
+    let cols=vec!["a", "b", "c", "d", "e", "f", "g", "h"];
+    let moves=all_moves_gen(&b);
+    let split_sfm=split_string_to_chars(standard_format_move);
+    let move_as_str=format!("{}{}", split_sfm[split_sfm.len()-2], split_sfm[split_sfm.len()-1]);
+    let loc=reverse_mapping_2(&move_as_str);
+    let kind=map_standard_format_to_kind(&split_sfm[0]);
+    let col=reverse_col_mapping(&split_sfm[split_sfm.len()-2]);
+    let row=reverse_row_mapping(&split_sfm[split_sfm.len()-1]);
+    let mut valid_indexes:Vec<usize>=vec![];
+
+    if kind==Kind::King{
+        return Move {piece:PieceId::K, location: loc};
+    }
+
+
+    if b.turn%2==0{
+        if kind==Kind::Pawn && split_sfm.len()>2{
+            return Move {piece:b.white_i_to_p.get_piece(loc/10+10+col).unwrap(), location:loc};
+        }
+        for i in b.white_piece_ids.iter(){
+            if map_piece_id_to_kind(*i)==kind{
+                if kind==Kind::Pawn && b.white_indexes.get_index(*i).unwrap()/10==row && contains_element(&moves.white_moves.get_moves(*i), loc){
+                    return Move {piece:*i, location:loc};
+                }
+                if kind==Kind::Queen || kind==Kind::Knight || kind==Kind::Rook{
+                    if contains_element(&moves.white_moves.get_moves(*i), loc){
+                        valid_indexes.push(b.white_indexes.get_index(*i).unwrap());
+                    }
+                }
+            }
+        }
+        if valid_indexes.len()==1{
+            return Move { piece: b.white_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
+        }
+        else{
+            for i in split_sfm.iter(){
+                if contains_element(&cols, i){
+                    let c=reverse_col_mapping(i);
+                    if c%10==valid_indexes[0]%10{
+                        return Move { piece: b.white_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
+                    }
+                    else{
+                        return Move { piece: b.white_i_to_p.get_piece(valid_indexes[1]).unwrap(), location:loc};
+                    }
+                }
+                if contains_element(&rows, i){
+                    let r=reverse_row_mapping(i);
+                    if r/10==valid_indexes[0]/10{
+                        return Move { piece: b.white_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
+                    }
+                    else{
+                        return Move { piece: b.white_i_to_p.get_piece(valid_indexes[1]).unwrap(), location:loc};
+                    }
+                }
+            }
+        }
+    }
+    else{
+         if kind==Kind::Pawn && split_sfm.len()>2{
+            return Move {piece:b.black_i_to_p.get_piece(loc/10-10+col).unwrap(), location:loc};
+        }
+        for i in b.black_piece_ids.iter(){
+            if map_piece_id_to_kind(*i)==kind{
+                if kind==Kind::Pawn && b.black_indexes.get_index(*i).unwrap()/10==row && contains_element(&moves.black_moves.get_moves(*i), loc){
+                    return Move {piece:*i, location:loc};
+                }
+                if kind==Kind::Queen || kind==Kind::Knight || kind==Kind::Rook{
+                    if contains_element(&moves.black_moves.get_moves(*i), loc){
+                        valid_indexes.push(b.black_indexes.get_index(*i).unwrap());
+                    }
+                }
+            }
+        }
+        if valid_indexes.len()==1{
+            return Move { piece: b.black_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
+        }
+        else{
+            for i in split_sfm.iter(){
+                if contains_element(&cols, i){
+                    let c=reverse_col_mapping(i);
+                    if c%10==valid_indexes[0]%10{
+                        return Move { piece: b.black_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
+                    }
+                    else{
+                        return Move { piece: b.black_i_to_p.get_piece(valid_indexes[1]).unwrap(), location:loc};
+                    }
+                }
+                if contains_element(&rows, i){
+                    let r=reverse_row_mapping(i);
+                    if r/10==valid_indexes[0]/10{
+                        return Move { piece: b.black_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
+                    }
+                    else{
+                        return Move { piece: b.black_i_to_p.get_piece(valid_indexes[1]).unwrap(), location:loc};
+                    }
+                }
+            }
+        }
+    }
+    return Move {piece:PieceId::Error, location:54321};
+}
+
+pub fn play_std_format_game(game:&str){
+    let moves=process_moves_string(game);
+    for (i, v) in moves.iter().enumerate(){
+        
+    }
+}
+
+
+pub fn index_to_string(index: usize) -> String {
     if index == 99 {
         return "KS".to_string();
     } else if index == 100 {
@@ -146,7 +318,7 @@ fn print_all_checked_moves(b:Board){
     println!("\n");
     print!("white: ");
     for i in b.white_piece_ids.iter(){
-        print!("{}: ", i.to_string());
+        print!("{} at {}: ", map_piece_id_to_kind(*i).to_string(), index_to_string(b.white_indexes.get_index(*i).unwrap()));
         let m=moves.white_moves.get_moves(*i);
         for j in m.iter(){
             print!("{} ", index_to_string(*j));
@@ -156,7 +328,7 @@ fn print_all_checked_moves(b:Board){
     println!("\n");
     print!("black: ");
     for i in b.black_piece_ids.iter(){
-        print!("{}: ", i.to_string());
+        print!("{} at {}: ", map_piece_id_to_kind(*i).to_string(), index_to_string(b.black_indexes.get_index(*i).unwrap()));
         let m=moves.black_moves.get_moves(*i);
         for j in m.iter(){
             print!("{} ", index_to_string(*j));
@@ -165,24 +337,306 @@ fn print_all_checked_moves(b:Board){
     }
 }
 
-pub fn print_all(game:Board){
+
+
+fn print_all(game:Board){
+    print!("turn:");
+    println!("{}", game.turn);
     let game2=game.clone();
+    println!("Black Prime {}", game.black_prime);
+    println!("Black Prime1 {}", game.black_prime1);
+    println!("White Prime {}", game.white_prime);
+    println!("White Prime1 {}", game.white_prime1);
     let game3=game.clone();
-    // let game4=game.clone();
+    let game4=game.clone();
     let game5=game.clone();
     print_full_board(game.full_board);
     print_piece_ids(game2);
     print_mappings(game3);
-    // print_all_pre_checked_moves(game4);
     print_all_checked_moves(game5);
+    base_error_check(game4);
 }
 
+fn base_error_check(b:Board){
+    let mut white_king_found=false;
+    let mut black_king_found=false;
+    let mut white_indexes=vec![];
+    let mut black_indexes=vec![];
+    for i in b.white_piece_ids.iter(){
+        
+        if *i==PieceId::K{
+            white_king_found=true;
+        }
+        let index=b.white_indexes.get_index(*i).unwrap();
+        white_indexes.push(index);
+        if b.black_i_to_p.get_piece(index)!=None{
+            println!("Error, black and white piece occupying the same spot");
+            println!("at {}", index);
+        }
+        let row=index/10;
+        let col=index%10; 
+        if b.full_board[row][col].kind!=map_piece_id_to_kind(*i) && b.full_board[row][col].team!=Team::W{
+            println!("Error, piece not found on fullboard at {}", index); 
+        }
+        if b.white_i_to_p.get_piece(index).unwrap_or(PieceId::Error)!=*i{
+            println!("Error, piece not found at in white i to p {}", index);
+        }
+    }
+    for i in b.black_piece_ids.iter(){
+        if *i==PieceId::K{
+            black_king_found=true;
+        }
+        let index=b.black_indexes.get_index(*i).unwrap();
+        black_indexes.push(index);
+        if b.white_i_to_p.get_piece(index)!=None{
+            println!("Error, black and white piece occupying the same spot");
+            println!("at {}", index);
+        }
+        let row=index/10;
+        let col=index%10; 
+        if b.full_board[row][col].kind!=map_piece_id_to_kind(*i) && b.full_board[row][col].team!=Team::B{
+            println!("Error, piece not found on fullboard at {}", index); 
+        }
+        if b.black_i_to_p.get_piece(index).unwrap_or(PieceId::Error)!=*i{
+            println!("Error, piece not found at in black i to p {}", index);
+        }
+    }
+    if !black_king_found{
+        println!("Error black king not found")
+    }
+    if !white_king_found{
+        println!("Error white king not found")
+    }
+    let all_indexes: Vec<usize> = vec![
+        0, 1, 2, 3, 4, 5, 6, 7,
+        10, 11, 12, 13, 14, 15, 16, 17,
+        20, 21, 22, 23, 24, 25, 26, 27,
+        30, 31, 32, 33, 34, 35, 36, 37,
+        40, 41, 42, 43, 44, 45, 46, 47,
+        50, 51, 52, 53, 54, 55, 56, 57,
+        60, 61, 62, 63, 64, 65, 66, 67,
+        70, 71, 72, 73, 74, 75, 76, 77,
+    ];
+    let no_black_ind=find_non_overlap(all_indexes.clone(), black_indexes); 
+    let no_white_ind=find_non_overlap(all_indexes, white_indexes);
+    let p1=no_black_ind.clone();
+    let p2=no_white_ind.clone();
+    let no_ind=find_overlap(&p1,&p2);
+    for i in no_black_ind.iter(){
+        if b.black_i_to_p.get_piece(*i).unwrap_or(PieceId::Error)!=PieceId::Error{
+            println!("Error, black i to p should be empty at {}", *i);
+        }
+    }
+    for i in no_white_ind.iter(){
+        if b.white_i_to_p.get_piece(*i).unwrap_or(PieceId::Error)!=PieceId::Error{
+            println!("Error, white i to p should be empty at {}", *i);
+        }
+    }
+
+    for i in no_ind{
+        let row=i/10;
+        let col=i%10;
+        if b.full_board[row][col].team!=Team::N && b.full_board[row][col].value!=0 && b.full_board[row][col].kind!=Kind::Empty{
+            println!("Error, fullboard should be empty at {}", i);
+        }
+    }
+    
 
 
+}
+pub fn easy_move(b:Board, piece:&str, location:&str)->Board{
+    println!("About to move piece, location{}:{}", piece, location);
+    let p_indexes=reverse_mapping(piece);
+    let loc_indexes=reverse_mapping(location);
+    if b.turn%2==0{
+        let p_id=b.white_i_to_p.get_piece(p_indexes);
+        return move_piece(b, p_id.unwrap(), loc_indexes);
+    }
+    else{
+        let p_id=b.black_i_to_p.get_piece(p_indexes);
+        return move_piece(b, p_id.unwrap(), loc_indexes);
+    }
+}
+
+fn pause() {
+    let mut input_string = String::new(); 
+    println!("Press Enter to continue...");
+    let _ = io::stdin().read_line(&mut input_string);
+} 
 pub fn test_b(){
+
     let game=init_board(true);
     let game2=game.clone(); 
     print_all(game);
+    pause();
     let game3=move_piece(game2, PieceId::P5, reverse_mapping("E4"));
+    let game4=game3.clone();
     print_all(game3);
+    pause();
+    let game5=easy_move(game4.clone(), "E7", "E5");
+    let game6=game5.clone();
+    print_all(game5);
+    pause();
+    let game7=easy_move(game6.clone(), "F1", "B5");
+    let game8=game7.clone();
+    print_all(game7);
+    pause();
+    let game9=easy_move(game8.clone(), "F8", "B4"); 
+    let game10=game9.clone();
+    print_all(game9);
+    pause();
+    let game11=easy_move(game10.clone(), "G1", "F3");
+    let game12=game11.clone();
+    print_all(game11);
+    pause();
+    let game13=easy_move(game12.clone(), "C7", "C6");
+    let game14=game13.clone();
+    print_all(game13);
+    pause();
+    let game15=move_piece(game14.clone(), PieceId::K, 99);
+    let game16=game15.clone();
+    print_all(game15);
+    pause();
+    let game17=easy_move(game16.clone(), "F7", "F5");
+    let game18=game17.clone();
+    print_all(game17);
+    pause();
+    let game19=easy_move(game18.clone(), "E4", "F5"); 
+    let game20=game19.clone();
+    print_all(game19);
+    pause();
+    let game21=easy_move(game20.clone(), "G7", "G5");
+    let game22 = game21.clone();
+    print_all(game21);
+    pause();
+    let game23 = easy_move(game22.clone(), "F5", "G6");
+    let game24 = game23.clone();
+    print_all(game23);
+    pause();
+    let game25 = easy_move(game24.clone(), "H7", "G6");
+    let game26 = game25.clone();
+    print_all(game25);
+    pause();
+    let game27 = easy_move(game26.clone(), "F3", "E5");
+    let game28 = game27.clone();
+    print_all(game27);
+    pause();
+    let game29 = easy_move(game28.clone(), "H8", "H2");
+    let game30 = game29.clone();
+    print_all(game29);
+    pause();
+    let game31 = easy_move(game30.clone(), "D1", "F3");
+    let game32 = game31.clone();
+    print_all(game31);
+    pause();
+    let game33 = easy_move(game32.clone(), "H2", "H1");
+    let game34 = game33.clone();
+    print_all(game33);
+    pause();
+    let game35 = easy_move(game34.clone(), "G1", "H1");
+    let game36 = game35.clone();
+    print_all(game35);
+    pause();
+    let game37 = easy_move(game36.clone(), "C6", "B5");
+    let game38 = game37.clone();
+    print_all(game37);
+    pause();
+    let game39 = easy_move(game38.clone(), "F3", "F8");
+    let game40 = game39.clone();
+    print_all(game39);
+    pause();
+    let game41 = easy_move(game40.clone(), "E8", "F8");
+    let game42 = game41.clone();
+    print_all(game41);
+    pause();
+    let game43 = easy_move(game42.clone(), "E5", "G6");
+    let game44 = game43.clone();
+    print_all(game43);
+    pause();
+    let game45 = easy_move(game44.clone(), "F8", "E8");
+    let game46 = game45.clone();
+    print_all(game45);
+    pause();
+    let game47 = easy_move(game46.clone(), "A2", "A4");
+    let game48 = game47.clone();
+    print_all(game47);
+    pause();
+    let game49 = easy_move(game48.clone(), "D7", "D5");
+    let game50 = game49.clone();
+    print_all(game49);
+    pause();
+    let game51 = easy_move(game50.clone(), "A4", "B5");
+    let game52 = game51.clone();
+    print_all(game51);
+    pause();
+    let game53 = easy_move(game52.clone(), "D5", "D4");
+    let game54 = game53.clone();
+    print_all(game53);
+    pause();
+    let game55 = easy_move(game54.clone(), "C2", "C4");
+    let game56 = game55.clone();
+    print_all(game55);
+    pause();
+    let game57 = easy_move(game56.clone(), "D4", "C3");
+    let game58 = game57.clone();
+    print_all(game57);
+    pause();
+    let game59 = easy_move(game58.clone(), "B5", "B6");
+    let game60 = game59.clone();
+    print_all(game59);
+    pause();
+    let game61 = easy_move(game60.clone(), "C3", "B2");
+    let game62 = game61.clone();
+    print_all(game61);
+    pause();
+    let game63 = easy_move(game62.clone(), "B6", "A7");
+    let game64 = game63.clone();
+    print_all(game63);
+    pause();
+    let game65 = easy_move(game64.clone(), "B2", "C1");
+    let game66 = game65.clone();
+    print_all(game65);
+    pause();
+    let game67 = easy_move(game66.clone(), "A7", "B8");
+    let game68 = game67.clone();
+    print_all(game67);
+    pause();
+    let game69 = easy_move(game68.clone(), "C8", "E6");
+    let game70 = game69.clone();
+    print_all(game69);
+    pause();
+    let game71 = easy_move(game70.clone(), "F1", "E1");
+    let game72 = game71.clone();
+    print_all(game71);
+    pause();
+    let game73 = easy_move(game72.clone(), "C1", "C2");
+    let game74 = game73.clone();
+    print_all(game73);
+    pause();
+    let game75 = easy_move(game74.clone(), "E1", "E6");
+    let game76 = game75.clone();
+    print_all(game75);
+    pause();
+    let game77 = easy_move(game76.clone(), "G8", "E7");
+    let game78 = game77.clone();
+    print_all(game77);
+    pause();
+    let game79 = easy_move(game78.clone(), "B4", "E7");
+    let game80 = game79.clone();
+    print_all(game79);
+    pause();
+    let game81 = easy_move(game80.clone(), "B8", "A8");
+    let game82 = game81.clone();
+    print_all(game81);
+    pause();
+    let game83 = easy_move(game82.clone(), "E7", "D6");
+    let game84 = game83.clone();
+    print_all(game83);
+    pause();
+    let game85 = easy_move(game84.clone(), "G6", "H8");
+    let game86 = game85.clone();
+    print_all(game85);
+    pause();
+    let game87 = easy_move(game86.clone(), "C2", "C1");
+    print_all(game87);
 }

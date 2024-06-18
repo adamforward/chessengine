@@ -41,14 +41,11 @@ fn generate_pawn_moves_black(board: &Board, row: usize, col: usize) -> Vec<usize
             moves.push((row + 1) * 10 + col - 1);
         }
         if row == 4
-            && board.full_board[4][col - 1].team == Team::W
-            && board.full_board[4][col - 1].kind == Kind::Pawn
+            && board.full_board[row][col - 1].team == Team::W
+            && board.full_board[row][col - 1].kind == Kind::Pawn
         {
-            let index_ref = row + col;
-            let pawn = board.black_i_to_p.get_piece(index_ref as usize).unwrap();
-            let p1 = primes1(pawn);
-            if board.white_prime % primes(col - 1) == 0 && board.black_prime1 % p1 == 0 {
-                let ep = 20 + col - 1;
+            if board.black_prime!=1 && board.black_prime % primes1(board.black_i_to_p.get_piece(row*10+col).unwrap()) == 0 && primes1(board.white_i_to_p.get_piece(row*10+col-1).unwrap())==board.white_prime1 {
+                let ep = (row+1)*10 + col - 1;
                 moves.push(ep);
             }
         }
@@ -59,15 +56,12 @@ fn generate_pawn_moves_black(board: &Board, row: usize, col: usize) -> Vec<usize
             moves.push((row + 1) * 10 + col + 1);
         }
         if row == 4
-            && board.full_board[4][col + 1].team == Team::W
-            && board.full_board[4][col + 1].kind == Kind::Pawn
+            && board.full_board[row][col + 1].team == Team::W
+            && board.full_board[row][col + 1].kind == Kind::Pawn
         {
             // Add the prime number checks here, similar to your Python code
-            let index_ref = row + col;
-            let pawn = board.black_i_to_p.get_piece(index_ref).unwrap();
-            let p1 = primes1(pawn);
-            if board.white_prime % primes(col + 1) == 0 && board.black_prime1 % p1 == 0 {
-                let ep = 20 + col + 1;
+            if board.black_prime!=1 && board.black_prime % primes1(board.black_i_to_p.get_piece(row*10+col).unwrap()) == 0 && primes1(board.white_i_to_p.get_piece(row*10+col+1).unwrap())==board.white_prime1 {
+                let ep = (row+1)*10 + col + 1;
                 moves.push(ep);
             }
         }
@@ -94,13 +88,11 @@ pub fn generate_pawn_moves_white(board: &Board, row: usize, col: usize) -> Vec<u
             moves.push((row - 1) * 10 + col - 1);
         }
         if row == 3
-            && board.full_board[3][col - 1].team == Team::B
-            && board.full_board[3][col - 1].kind == Kind::Pawn
+            && board.full_board[row][col - 1].team == Team::B
+            && board.full_board[row][col - 1].kind == Kind::Pawn
         {
-            let index_ref = row + col;
-            let pawn = board.white_i_to_p.get_piece(index_ref).unwrap();
-            let p1 = primes1(pawn);
-            if board.black_prime % primes(col - 1) == 0 && board.white_prime1 % p1 == 0 {
+            print!("index1 {}",row*10+col-1);
+            if board.white_prime!=1 && board.white_prime % primes1(board.white_i_to_p.get_piece(row*10+col).unwrap()) == 0 && primes1(board.black_i_to_p.get_piece(row*10+col-1).unwrap())==board.black_prime1{
                 let ep = 20 + col - 1;
                 moves.push(ep);
             }
@@ -112,14 +104,11 @@ pub fn generate_pawn_moves_white(board: &Board, row: usize, col: usize) -> Vec<u
             moves.push((row - 1) * 10 + col + 1);
         }
         if row == 3
-            && board.full_board[3][col + 1].team == Team::B
-            && board.full_board[3][col + 1].kind == Kind::Pawn
+            && board.full_board[row][col + 1].team == Team::B
+            && board.full_board[row][col + 1].kind == Kind::Pawn
         {
-            let index_ref = row + col;
-            let pawn = board.white_i_to_p.get_piece(index_ref).unwrap();
-            let p1 = primes1(pawn);
             // Add the prime number checks here, similar to your Python code
-            if board.black_prime % primes(col + 1) == 0 && board.white_prime1 % p1 == 0 {
+            if board.white_prime!=1 &&board.white_prime % primes1(board.white_i_to_p.get_piece(row*10+col).unwrap()) == 0 && primes1(board.black_i_to_p.get_piece(row*10+col+1).unwrap())==board.black_prime1  {
                 let ep = 20 + col + 1;
                 moves.push(ep);
             }
@@ -221,7 +210,7 @@ pub fn generate_king_moves(board: &Board, row: usize, col: usize) -> Vec<usize> 
 
             // Check if the target square is not occupied by a piece from the same team
             if board.full_board[move_row_usize][move_col_usize].team != team {
-                moves.push(move_row_usize * 8 + move_col_usize); // Assuming 8x8 board for index calculation
+                moves.push(move_row_usize * 10 + move_col_usize); // Assuming 8x8 board for index calculation
             }
         }
     }

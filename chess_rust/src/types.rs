@@ -59,9 +59,9 @@ pub enum PieceId {
     Q6,
     Q7,
     Q8,
-    Q9,
     Error,
 }
+
 impl PieceId {
     pub fn to_string(&self) -> &str {
         match self {
@@ -97,11 +97,11 @@ impl PieceId {
             PieceId::Q6 => "Q6",
             PieceId::Q7 => "Q7",
             PieceId::Q8 => "Q8",
-            PieceId::Q9 => "Q9",
             PieceId::Error => "Error",
         }
     }
 }
+
 #[derive(Clone, Debug, PartialEq, Copy)]
 pub enum Team {
     W,
@@ -117,6 +117,7 @@ impl Team {
         }
     }
 }
+
 #[derive(Clone, Debug)]
 pub enum GameState {
     InPlay,
@@ -124,17 +125,20 @@ pub enum GameState {
     PlayerWin,
     Stalemate,
 }
+
 #[derive(Clone, Debug)]
 pub struct Piece {
     pub team: Team,
     pub kind: Kind,
     pub value: i32,
 }
+
 #[derive(Clone, Debug)]
 pub struct Move {
     pub piece: PieceId,
-    pub location: i32,
+    pub location: usize,
 }
+
 #[derive(Clone, Debug)]
 pub struct IndexMap {
     hash: Vec<Option<usize>>,
@@ -258,6 +262,7 @@ pub struct AdavantageMap {
     pub advantage: f64,
     pub board: Board,
 }
+
 
 
 pub struct LocationToMove {
