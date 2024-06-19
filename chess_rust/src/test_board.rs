@@ -1,6 +1,7 @@
 use crate::base_functions::{init_board, map_piece_id_to_kind, find_non_overlap, find_overlap, contains_element};
 use crate::types::{Board, Piece, PieceId, Team, Kind, Move};
 use crate::upper_move_functions::{all_moves_gen, move_piece};
+use rand::Rng;
 use std::io;
 // use crate::base_move_functions::{generate_available_moves};
 fn reverse_mapping(b: &str) -> usize {
@@ -61,7 +62,8 @@ fn process_moves_string(input: &str) -> Vec<String> {
         .filter(|s| !s.contains('.'))
         .map(|s| s.to_string())
         .collect();
-} // moving 1. e4 e5  2. Bc4 d5  3. d4 c5  4. Nf3 exd4  5. Nxd4 Nf6 format to my data model
+} // moving the 1. e4 e5  2. Bc4 d5  3. d4 c5  4. Nf3 exd4  5. Nxd4 Nf6 etc..
+// format to my data model so I can test full games from copying and pasting 
 
 //white moves will have an even index still
 
@@ -98,11 +100,11 @@ fn map_standard_format_to_data_model(b:Board, standard_format_move:&str)->Move{
         }
         for i in b.white_piece_ids.iter(){
             if map_piece_id_to_kind(*i)==kind{
-                if kind==Kind::Pawn && b.white_indexes.get_index(*i).unwrap()/10==row && contains_element(&moves.white_moves.get_moves(*i), loc){
+                if kind==Kind::Pawn && b.white_indexes.get_index(*i).unwrap()/10==row && contains_element(&moves.moves.get_moves(*i), loc){
                     return Move {piece:*i, location:loc};
                 }
                 if kind==Kind::Queen || kind==Kind::Knight || kind==Kind::Rook{
-                    if contains_element(&moves.white_moves.get_moves(*i), loc){
+                    if contains_element(&moves.moves.get_moves(*i), loc){
                         valid_indexes.push(b.white_indexes.get_index(*i).unwrap());
                     }
                 }
@@ -140,11 +142,11 @@ fn map_standard_format_to_data_model(b:Board, standard_format_move:&str)->Move{
         }
         for i in b.black_piece_ids.iter(){
             if map_piece_id_to_kind(*i)==kind{
-                if kind==Kind::Pawn && b.black_indexes.get_index(*i).unwrap()/10==row && contains_element(&moves.black_moves.get_moves(*i), loc){
+                if kind==Kind::Pawn && b.black_indexes.get_index(*i).unwrap()/10==row && contains_element(&moves.moves.get_moves(*i), loc){
                     return Move {piece:*i, location:loc};
                 }
                 if kind==Kind::Queen || kind==Kind::Knight || kind==Kind::Rook{
-                    if contains_element(&moves.black_moves.get_moves(*i), loc){
+                    if contains_element(&moves.moves.get_moves(*i), loc){
                         valid_indexes.push(b.black_indexes.get_index(*i).unwrap());
                     }
                 }
@@ -179,10 +181,18 @@ fn map_standard_format_to_data_model(b:Board, standard_format_move:&str)->Move{
     return Move {piece:PieceId::Error, location:54321};
 }
 
-pub fn play_std_format_game(game:&str){
+pub fn play_std_format_game_full(game:&str){
+    let mut rng = rand::thread_rng(); 
+    let random_bool: bool = rng.gen_bool(0.5); 
+    let og_game=init_board(random_bool); //wanna test ai team as white and black
+
     let moves=process_moves_string(game);
-    for (i, v) in moves.iter().enumerate(){
-        
+
+    for i in moves.iter().enumerate(){
+        let cloned_game=og_game.clone();
+
+
+
     }
 }
 
@@ -319,7 +329,7 @@ fn print_all_checked_moves(b:Board){
     print!("white: ");
     for i in b.white_piece_ids.iter(){
         print!("{} at {}: ", map_piece_id_to_kind(*i).to_string(), index_to_string(b.white_indexes.get_index(*i).unwrap()));
-        let m=moves.white_moves.get_moves(*i);
+        let m=moves.moves.get_moves(*i);
         for j in m.iter(){
             print!("{} ", index_to_string(*j));
         }
@@ -329,7 +339,7 @@ fn print_all_checked_moves(b:Board){
     print!("black: ");
     for i in b.black_piece_ids.iter(){
         print!("{} at {}: ", map_piece_id_to_kind(*i).to_string(), index_to_string(b.black_indexes.get_index(*i).unwrap()));
-        let m=moves.black_moves.get_moves(*i);
+        let m=moves.moves.get_moves(*i);
         for j in m.iter(){
             print!("{} ", index_to_string(*j));
         }

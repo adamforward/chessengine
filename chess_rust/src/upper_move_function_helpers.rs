@@ -9,6 +9,11 @@ pub fn w_rook_pinning(board: &Board, pinning: PieceId, overlap: &Vec<usize>) ->V
     let k_col = k_pos % 10;
     let mut p_indexes = 69;
     let mut move_vector: Vec<usize> = vec![w_pos];
+    //here we're iterating over the vector between the king and the pinning piece. 
+    //checking for the existence of 1 black piece in this vector, if there's one white piece or 2 black pieces it's not pinned. 
+    //Also, if the only piece in between the pinning piece and the king is a black piece adjacent to the king, 
+    //This piece needs to be removed from the king's available moves. 
+
     if w_col == k_col {
         // Column alignment
         let magnitude = (k_row as i32 - w_row as i32).abs();
@@ -81,10 +86,6 @@ pub fn w_rook_pinning(board: &Board, pinning: PieceId, overlap: &Vec<usize>) ->V
         }
         if !done{
             return vec![vec![], overlap.clone()];
-        }
-        println!("move vector");
-        for i in move_vector.clone(){
-            print!("{}", i);
         }
          return vec![move_vector, overlap.clone()];
     }
@@ -203,7 +204,7 @@ pub fn w_bishop_pinning(
         || w_col == k_col
     {
         return vec![vec![], overlap.clone()];
-    }
+    } //if the bishop is not diagonal to the black king. 
 
     let mut p_indexes:usize=101;
     let mut move_vector = vec![w_pos];
@@ -311,19 +312,17 @@ pub fn b_bishop_pinning(
 
 
 
-pub fn in_check_directional(board: &Board, re:&AllMovesGenRe, pressuring: PieceId, team: Team) -> AvailableMovesMap {
+pub fn in_check_directional(board: &Board, re:&AvailableMovesMap, pressuring: PieceId, team: Team) -> AvailableMovesMap {
     let king_index:usize;
     let pressuring_index:usize; 
-    let old_av_map:AvailableMovesMap;
+    let old_av_map=re;
     if team==Team::W {
             king_index = board.black_indexes.get_index(PieceId::K).unwrap();
             pressuring_index = board.white_indexes.get_index(pressuring).unwrap();
-            old_av_map =re.white_moves.clone();
     }
     else {
             king_index = board.white_indexes.get_index(PieceId::K).unwrap();
             pressuring_index = board.black_indexes.get_index(pressuring).unwrap();
-            old_av_map =re.black_moves.clone();
         }
 
     let king_row = king_index / 10;
@@ -355,26 +354,31 @@ pub fn in_check_directional(board: &Board, re:&AllMovesGenRe, pressuring: PieceI
     else{
         for i in board.black_piece_ids.iter(){
             if *i!=PieceId::K{
+                //king logic is different so you want to move out of the directional check instead of into it. 
                 let new=find_overlap(&old_av_map.get_moves(*i), &good_moves);
                 new_av_map.insert_moves(*i, &new);
             }
         }
         
     }
+    //oppossite side of king needs to be removed by check
     let oppossite_side_of_k=(king_row as isize+r_inc)*10+king_col as isize+c_inc;
     let mut bad_moves_for_king:Vec<usize>=vec![];
-    if 7>=oppossite_side_of_k/10 && oppossite_side_of_k/10<=0 && 7>=oppossite_side_of_k%10 &&oppossite_side_of_k%10<=0{
+
+    if 7 >= oppossite_side_of_k / 10 && oppossite_side_of_k / 10 >= 0 && 7 >= oppossite_side_of_k % 10 && oppossite_side_of_k % 10 >= 0 {
         bad_moves_for_king.push(oppossite_side_of_k as usize);
     }
+
     let near_side_of_k=(king_row as isize-r_inc)*10+king_col as isize-c_inc;
     if near_side_of_k as usize!=pressuring_index{
         bad_moves_for_king.push(near_side_of_k as usize);
     }
+
     if team==Team::B{
-        new_av_map.insert_moves(PieceId::K, &find_non_overlap(re.white_moves.get_moves(PieceId::K), bad_moves_for_king.clone()));
+        new_av_map.insert_moves(PieceId::K, &find_non_overlap(re.get_moves(PieceId::K), bad_moves_for_king.clone()));
     }
     else{
-        new_av_map.insert_moves(PieceId::K, &find_non_overlap(re.black_moves.get_moves(PieceId::K), bad_moves_for_king.clone()));
+        new_av_map.insert_moves(PieceId::K, &find_non_overlap(re.get_moves(PieceId::K), bad_moves_for_king.clone()));
     }
     return new_av_map;
     

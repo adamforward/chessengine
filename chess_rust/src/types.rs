@@ -11,7 +11,8 @@ pub enum Kind {
     Bishop,
     Empty,
 }
-impl Kind {
+
+impl Kind { //this is just for testing. 
     pub fn to_string(&self) -> &str {
         match self {
             Kind::Pawn => "P",
@@ -26,7 +27,7 @@ impl Kind {
 }
 
 #[derive(Clone, Debug, Copy, PartialEq)]
-pub enum PieceId {
+pub enum PieceId { // unique identifiers for every possible piece on the board
     P1,
     P2,
     P3,
@@ -62,7 +63,7 @@ pub enum PieceId {
     Error,
 }
 
-impl PieceId {
+impl PieceId { //just for testing
     pub fn to_string(&self) -> &str {
         match self {
             PieceId::P1 => "P1",
@@ -103,13 +104,14 @@ impl PieceId {
 }
 
 #[derive(Clone, Debug, PartialEq, Copy)]
-pub enum Team {
+pub enum Team { //white, black or empty square
     W,
     B,
     N,
 }
+
 impl Team {
-    pub fn to_string(&self) -> &str {
+    pub fn to_string(&self) -> &str { //once again just for testing
         match self {
             Team::W => "W",
             Team::B => "B",
@@ -119,7 +121,7 @@ impl Team {
 }
 
 #[derive(Clone, Debug)]
-pub enum GameState {
+pub enum GameState { //will be used for sending info to front end. 
     InPlay,
     AiWin,
     PlayerWin,
@@ -127,20 +129,23 @@ pub enum GameState {
 }
 
 #[derive(Clone, Debug)]
-pub struct Piece {
+pub struct Piece {//this is what is represented on the full_board field
     pub team: Team,
     pub kind: Kind,
     pub value: i32,
 }
 
 #[derive(Clone, Debug)]
-pub struct Move {
+pub struct Move {//parameters for the move_piece function. 
     pub piece: PieceId,
     pub location: usize,
 }
 
 #[derive(Clone, Debug)]
-pub struct IndexMap {
+pub struct IndexMap {//this stores every unique PieceId to its location on the board. 
+    //for every index, row is stored in the 10s place and column in stored in the 1s place
+    //indexes can range from 0 (A8) to 77 (H1), /10 for row %10 for column
+    //NOTE: pieceids that are captured or do not exist yet (pawn promotions) should NEVER be looked up here
     hash: Vec<Option<usize>>,
 }
 impl IndexMap {
@@ -160,8 +165,12 @@ impl IndexMap {
         self.hash[piece_id as usize] = None;
     }
 }
+
 #[derive(Clone, Debug)]
-pub struct AvailableMovesMap {
+pub struct AvailableMovesMap {//this maps the PieceId to where it can move to
+    //key is pieceid and value is vector of places the unique piece can move
+    //unlike the other maps, this one has to be calculated from scratch each turn instead of just changing one or two key-value pairs each turn.
+    //Due to this, the mappings for piece moves are not included in the board class 
     pub hash: Vec<Vec<usize>>,
 }
 impl AvailableMovesMap {
@@ -201,7 +210,8 @@ pub type TreeNodeRef = Rc<RefCell<TreeNode>>; //RefCell<T> and Cell<T> is a type
 pub struct IToPMap {
     pub hash: Vec<Option<PieceId>>,
 }
-impl IToPMap {
+impl IToPMap { //index maps to what PieceId is located on that index
+    //once again, the get_piece method should NEVER be called on an empty index
     pub fn new() -> Self {
         let num_variants = 78;
         IToPMap {
@@ -222,39 +232,58 @@ impl IToPMap {
 
 #[derive(Clone, Debug)]
 pub struct Board {
-    pub moves_log: Vec<Move>,
+    pub moves_log: Vec<Move>, //moves_log is just for testing and maybe recording games in the future
+    //moves_log is not actually used by the engine
+
     pub ai_team_is_white: bool,
-    pub full_board: Vec<Vec<Piece>>,
-    pub turn: i32,
+    pub full_board: Vec<Vec<Piece>>, // represents current state of chess board
+    pub turn: i32,//%2==0 means its whites turn, else ->blacks turn 
+
     pub black_indexes: IndexMap,
-    pub white_indexes: IndexMap,
+    pub white_indexes: IndexMap, //description of these maps are in definitions
     pub black_i_to_p: IToPMap,
     pub white_i_to_p: IToPMap,
-    pub black_points: i32,
+
+    //these points fields are not currently used anywhere by engine, but the whole idea 
+    //is pawn=1, knight=3..., may be important later or I may take it out. 
+    pub black_points: i32, 
     pub white_points: i32,
+
+    //the piece ids represent which unique pieces are currently on the board for each team
+    //these vectors are iterated over to both generate moves and search for best move
+    //there should NEVER be a piece in here that is not on the board
     pub white_piece_ids: Vec<PieceId>,
     pub black_piece_ids: Vec<PieceId>,
+
+    //origanally, I was using arrays of booleans to store information on if these events happened:
+    //pawn skipping last turn
+    //pawn skipping at any turn 
+    //knight, king or rook is moved
+    //This information was moved over to the prime numbers
+    //multiply by a prime when one of these events happens, do % on the stored value for that prime # when checking to see if it happened or not
+
+    //white_prime is multiplied by a prime number that is hashed from the pieceId of the pawn that moved when a white pawn skips forward 2
+    //Primes1 is the hashing function for this
+    //if a white pawn wants to en pessant, it needed to have skipped forward 2 earlier in the game
+    //white_prime stores that info for white and black_prime1 for black
     pub white_prime: i32,
     pub black_prime: i32,
-    pub white_prime1: i32,
-    pub black_prime1: i32,
+
+    //the vals white_prime1 and black_prime1 represent which pawn for their teams skipped forward last turn. 
+    //after black moves, white prime is reset to 1 and vice versa. 
+    //This is for knowing if you can en pessant, since the opposite pawn would have had to move last turn to do this
+    pub white_prime1: i16,
+    pub black_prime1: i16,
+    //prime2 is for castling. you cannot castle if you have moved the king, or the respective side's rook
+    //2,3,5,7,11,13 are hardcoded to represent this info
     pub prime2: i32,
+    //ai_advantage is a field that works with the searching algorithm to find best move. It is generated by the neural network. 
     pub ai_advantage: f64,
 }
 
 pub struct AllMovesGenRe {
-    pub black_moves:AvailableMovesMap,
-    pub white_moves:AvailableMovesMap,
+    pub moves:AvailableMovesMap,
     pub checking:bool
-}
-impl AllMovesGenRe {
-    pub fn new()->AllMovesGenRe{
-        AllMovesGenRe{
-            black_moves:AvailableMovesMap::new(),
-            white_moves:AvailableMovesMap::new(),
-            checking:false,
-        }
-    }
 }
 
 #[derive(Clone, Debug)]

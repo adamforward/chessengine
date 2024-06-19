@@ -8,14 +8,14 @@ fn generate_top_moves(num_moves: i32, parent:TreeNode)->Vec<TreeNodeRef> {
     let level=parent.level;
     let parent_ref=Some(Rc::new(RefCell::new(parent)));
     let new_info=all_moves_gen(&curr_game);
-    if game_still_going(&curr_game, new_info.checking, &new_info.white_moves, &new_info.black_moves)!=0.0{
-        curr_game.ai_advantage=game_still_going(&curr_game, new_info.checking, &new_info.white_moves, &new_info.black_moves); 
+    if game_still_going(&curr_game, new_info.checking, &new_info.moves, &new_info.moves)!=0.0{
+        curr_game.ai_advantage=game_still_going(&curr_game, new_info.checking, &new_info.moves, &new_info.moves); 
         return vec![];
     }
     let mut advantage_map:Vec<AdavantageMap>=vec![];
     if curr_game.turn%2==0{
         for &i in curr_game.white_piece_ids.iter(){
-            let moves=new_info.white_moves.get_moves(i);
+            let moves=new_info.moves.get_moves(i);
             for &j in moves.iter(){
                 let param_move=curr_game.clone();
                 let potential_move=move_piece(param_move, i, j);
@@ -27,7 +27,7 @@ fn generate_top_moves(num_moves: i32, parent:TreeNode)->Vec<TreeNodeRef> {
     }
     else{
         for &i in curr_game.black_piece_ids.iter(){
-            let moves=new_info.black_moves.get_moves(i);
+            let moves=new_info.moves.get_moves(i);
             for &j in moves.iter(){
                 let param_move=curr_game.clone();
                 let potential_move=move_piece(param_move, i, j);
@@ -54,12 +54,12 @@ fn generate_top_moves(num_moves: i32, parent:TreeNode)->Vec<TreeNodeRef> {
         else{
             e.board.ai_advantage=e.advantage;
         }
-        if ai_turn && game_still_going(&curr_game, new_info.checking, &new_info.white_moves, &new_info.black_moves)==100000.0{
+        if ai_turn && game_still_going(&curr_game, new_info.checking, &new_info.moves, &new_info.moves)==100000.0{
             e.board.ai_advantage=1000000.0;
             re.push(Rc::new(RefCell::new(TreeNode { parent:parent_ref.clone(), children:vec![],game:e.board.clone(), level})));
             done=true;
         }
-        if !ai_turn && game_still_going(&curr_game, new_info.checking, &new_info.white_moves, &new_info.black_moves)==-100000.0{
+        if !ai_turn && game_still_going(&curr_game, new_info.checking, &new_info.moves, &new_info.moves)==-100000.0{
             e.board.ai_advantage=-1000000.0;
             re.push(Rc::new(RefCell::new(TreeNode {parent:parent_ref.clone(), children:vec![],game:e.board.clone(), level})));
             done=true;
@@ -67,10 +67,10 @@ fn generate_top_moves(num_moves: i32, parent:TreeNode)->Vec<TreeNodeRef> {
         let mut loss_count=0;
         let mut count=0;
         for j in immut_adv.iter(){
-            if !ai_turn && game_still_going(&curr_game, new_info.checking, &new_info.white_moves, &new_info.black_moves)==-100000.0 && loss_count<num_moves{
+            if !ai_turn && game_still_going(&curr_game, new_info.checking, &new_info.moves, &new_info.moves)==-100000.0 && loss_count<num_moves{
                 loss_count+=1;
             }
-            if ai_turn && game_still_going(&curr_game, new_info.checking, &new_info.white_moves, &new_info.black_moves)==100000.0 && loss_count<num_moves{
+            if ai_turn && game_still_going(&curr_game, new_info.checking, &new_info.moves, &new_info.moves)==100000.0 && loss_count<num_moves{
                 loss_count+=1;
             }
             if e.advantage<j.advantage{

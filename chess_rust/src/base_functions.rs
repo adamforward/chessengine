@@ -1,7 +1,10 @@
 use crate::types::{ Board, IToPMap, IndexMap, Kind, Piece, PieceId, Team};
 use std::collections::HashSet;
 use std::hash::Hash;
+
 pub fn map_piece_id_to_kind(piece: PieceId) -> Kind {
+    //Kind is identifier for type of piece, PieceId is for individual pieces
+    //Every pawn has same kind, but different ID
     match piece {
         PieceId::P1
         | PieceId::P2
@@ -43,6 +46,8 @@ pub fn map_piece_id_to_kind(piece: PieceId) -> Kind {
 }
 
 pub fn init_board(ai_team: bool) -> Board {
+    //this is for generating a new game, so a board where everything is in starting position
+    //I describe all of the different fields in types.rust
     let moves_log = Vec::new();
     let mut full_board = Vec::new();
     let w_piece_ids = vec![
@@ -523,11 +528,19 @@ pub fn init_board(ai_team: bool) -> Board {
         turn: 0,
     };
 }
+
+//each prime returned here is an identifier for did the pawn of whatever team skip ahead last turn 
+//I use prime numbers to efficiently store information on what has or has not happened in the chess game. 
 pub fn primes(col: usize) -> i32 {
     let primes = vec![2, 3, 5, 7, 11, 13, 17, 19];
     return primes[col]; // Dereference `col` here
-}
-pub fn primes1(p: PieceId) -> i32 {
+} 
+
+pub fn primes1(p: PieceId) -> i32 { 
+    //while primes stores whether or not a pawn jumped ahead last turn, 
+    //primes1 is for if the pawn jumped 2 squares at all, so the column doesn't matter.
+    //this is because if a pawn wants to en pessant capture another piece, it can only do this if 
+    //the pawn jumped ahead at the start. 
     match p {
         PieceId::P1 => 2,
         PieceId::P2 => 3,
@@ -540,6 +553,7 @@ pub fn primes1(p: PieceId) -> i32 {
         _ => 1,
     }
 }
+
 pub fn contains_element<T: PartialEq>(v: &Vec<T>, element: T) -> bool {
     for i in v.iter() {
         if *i == element {
@@ -548,6 +562,8 @@ pub fn contains_element<T: PartialEq>(v: &Vec<T>, element: T) -> bool {
     }
     false
 }
+
+//I only support pawn to queen and pawn to knight promotions. 
 pub fn pawn_to_queen(p: PieceId) -> PieceId {
     match p {
         PieceId::P1 => PieceId::Q1,
@@ -578,6 +594,7 @@ pub fn find_overlap<T: PartialEq + Eq + Hash + Clone>(v1: &[T], v2: &[T]) -> Vec
     let set2: HashSet<&T> = v2.iter().collect();
     set1.intersection(&set2).cloned().cloned().collect()
 }
+
 pub fn find_non_overlap<T: PartialEq + Eq + Hash + Clone>(v1: Vec<T>, v2: Vec<T>) -> Vec<T> {
     let set1: HashSet<T> = v1.into_iter().collect();
     let set2: HashSet<T> = v2.into_iter().collect();
