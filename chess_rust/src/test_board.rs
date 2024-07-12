@@ -1,10 +1,11 @@
 use crate::base_functions::{init_board, map_piece_id_to_kind, find_non_overlap, find_overlap, contains_element};
-use crate::types::{Board, Piece, PieceId, Team, Kind, Move};
+use crate::types::{Board, Piece, PieceId, Team, Kind};
 use crate::upper_move_functions::{all_moves_gen, move_piece};
-use rand::Rng;
+use crate::server_processing::{pgn_to_hash};
+// use rand::Rng;
 use std::io;
 // use crate::base_move_functions::{generate_available_moves};
-fn reverse_mapping(b: &str) -> usize {
+pub fn reverse_mapping(b: &str) -> usize {
     match b {
         "A8" => 0,  "B8" => 1,  "C8" => 2,  "D8" => 3,  "E8" => 4,  "F8" => 5,  "G8" => 6,  "H8" => 7,
         "A7" => 10, "B7" => 11, "C7" => 12, "D7" => 13, "E7" => 14, "F7" => 15, "G7" => 16, "H7" => 17,
@@ -18,7 +19,7 @@ fn reverse_mapping(b: &str) -> usize {
     }
 }
 
-fn reverse_mapping_2(b: &str) -> usize {
+pub fn reverse_mapping_2(b: &str) -> usize {
     match b {
         "a8" => 0,  "b8" => 1,  "c8" => 2,  "d8" => 3,  "e8" => 4,  "f8" => 5,  "g8" => 6,  "h8" => 7,
         "a7" => 10, "b7" => 11, "c7" => 12, "d7" => 13, "e7" => 14, "f7" => 15, "g7" => 16, "h7" => 17,
@@ -28,24 +29,24 @@ fn reverse_mapping_2(b: &str) -> usize {
         "a3" => 50, "b3" => 51, "c3" => 52, "d3" => 53, "e3" => 54, "f3" => 55, "g3" => 56, "h3" => 57,
         "a2" => 60, "b2" => 61, "c2" => 62, "d2" => 63, "e2" => 64, "f2" => 65, "g2" => 66, "h2" => 67,
         "a1" => 70, "b1" => 71, "c1" => 72, "d1" => 73, "e1" => 74, "f1" => 75, "g1" => 76, "h1" => 77,
-        "O-O"=>99, "O-O-O"=>100,
+        "O-O"=>99, "O-O-O"=>100, "=Q"=>101, "=N"=>102,
         _ => 100000,
     }
 }
 
-fn reverse_row_mapping(b:&str)->usize{
+pub fn reverse_row_mapping(b:&str)->usize{
     match b{
     "8"=>0, "7"=>10, "6"=>20, "5"=>30, "4"=>40, "3"=>50, "2"=>60, "1"=>70, _ => 100000,
     }
 }
 
-fn reverse_col_mapping(b:&str)->usize{
+pub fn reverse_col_mapping(b:&str)->usize{
     match b{
         "a"=>0, "b"=>1, "c"=>2, "d"=>3, "e"=>4, "f"=>5, "g"=>6, "h"=>7, _ =>100000,
     }
 }
 
-fn map_standard_format_to_kind(input: &str)->Kind{
+pub fn map_standard_format_to_kind(input: &str)->Kind{
     match input{
         "N"=>Kind::Knight,
         "B"=>Kind::Bishop,
@@ -56,7 +57,7 @@ fn map_standard_format_to_kind(input: &str)->Kind{
     }
 }
 
-fn process_moves_string(input: &str) -> Vec<String> {
+pub fn process_moves_string(input: &str) -> Vec<String> {
     return input
         .split_whitespace()
         .filter(|s| !s.contains('.'))
@@ -67,132 +68,35 @@ fn process_moves_string(input: &str) -> Vec<String> {
 
 //white moves will have an even index still
 
-fn split_string_to_chars(s: &str) -> Vec<String> {
+pub fn split_string_to_chars(s: &str) -> Vec<String> {
     s.chars().map(|c| c.to_string()).collect()
 }
 
-fn map_standard_format_to_data_model(b:Board, standard_format_move:&str)->Move{
-    if standard_format_move=="O-O-O"{
-        return Move {piece:PieceId::K, location:100};
-    }
-    if standard_format_move=="O-O"{
-        return Move {piece:PieceId::K, location:99};
-    }
-    let rows=vec!["8", "7", "6", "5", "4", "3", "2", "1"];
-    let cols=vec!["a", "b", "c", "d", "e", "f", "g", "h"];
-    let moves=all_moves_gen(&b);
-    let split_sfm=split_string_to_chars(standard_format_move);
-    let move_as_str=format!("{}{}", split_sfm[split_sfm.len()-2], split_sfm[split_sfm.len()-1]);
-    let loc=reverse_mapping_2(&move_as_str);
-    let kind=map_standard_format_to_kind(&split_sfm[0]);
-    let col=reverse_col_mapping(&split_sfm[split_sfm.len()-2]);
-    let row=reverse_row_mapping(&split_sfm[split_sfm.len()-1]);
-    let mut valid_indexes:Vec<usize>=vec![];
-
-    if kind==Kind::King{
-        return Move {piece:PieceId::K, location: loc};
-    }
 
 
-    if b.turn%2==0{
-        if kind==Kind::Pawn && split_sfm.len()>2{
-            return Move {piece:b.white_i_to_p.get_piece(loc/10+10+col).unwrap(), location:loc};
+fn play_std_format_game_full(game: &str) {
+    // let mut rng = rand::thread_rng();
+    // let random_bool: bool = rng.gen_bool(0.5);
+    let mut b = init_board(true); 
+
+    let moves = process_moves_string(game);
+
+    for i in moves.iter() {
+        let b1 = b.clone();
+        let b2 = b.clone();
+        let b4 = b.clone();
+        let hash_moves=all_moves_gen(&b1);
+        let m = pgn_to_hash(&b1, i,&hash_moves);
+        let new_location;
+        if b4.turn%2==0{
+            new_location = index_to_string(b4.white_indexes.get_index(m.piece).unwrap());
+        }else{
+            new_location = index_to_string(b4.black_indexes.get_index(m.piece).unwrap());
         }
-        for i in b.white_piece_ids.iter(){
-            if map_piece_id_to_kind(*i)==kind{
-                if kind==Kind::Pawn && b.white_indexes.get_index(*i).unwrap()/10==row && contains_element(&moves.moves.get_moves(*i), loc){
-                    return Move {piece:*i, location:loc};
-                }
-                if kind==Kind::Queen || kind==Kind::Knight || kind==Kind::Rook{
-                    if contains_element(&moves.moves.get_moves(*i), loc){
-                        valid_indexes.push(b.white_indexes.get_index(*i).unwrap());
-                    }
-                }
-            }
-        }
-        if valid_indexes.len()==1{
-            return Move { piece: b.white_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
-        }
-        else{
-            for i in split_sfm.iter(){
-                if contains_element(&cols, i){
-                    let c=reverse_col_mapping(i);
-                    if c%10==valid_indexes[0]%10{
-                        return Move { piece: b.white_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
-                    }
-                    else{
-                        return Move { piece: b.white_i_to_p.get_piece(valid_indexes[1]).unwrap(), location:loc};
-                    }
-                }
-                if contains_element(&rows, i){
-                    let r=reverse_row_mapping(i);
-                    if r/10==valid_indexes[0]/10{
-                        return Move { piece: b.white_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
-                    }
-                    else{
-                        return Move { piece: b.white_i_to_p.get_piece(valid_indexes[1]).unwrap(), location:loc};
-                    }
-                }
-            }
-        }
-    }
-    else{
-         if kind==Kind::Pawn && split_sfm.len()>2{
-            return Move {piece:b.black_i_to_p.get_piece(loc/10-10+col).unwrap(), location:loc};
-        }
-        for i in b.black_piece_ids.iter(){
-            if map_piece_id_to_kind(*i)==kind{
-                if kind==Kind::Pawn && b.black_indexes.get_index(*i).unwrap()/10==row && contains_element(&moves.moves.get_moves(*i), loc){
-                    return Move {piece:*i, location:loc};
-                }
-                if kind==Kind::Queen || kind==Kind::Knight || kind==Kind::Rook{
-                    if contains_element(&moves.moves.get_moves(*i), loc){
-                        valid_indexes.push(b.black_indexes.get_index(*i).unwrap());
-                    }
-                }
-            }
-        }
-        if valid_indexes.len()==1{
-            return Move { piece: b.black_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
-        }
-        else{
-            for i in split_sfm.iter(){
-                if contains_element(&cols, i){
-                    let c=reverse_col_mapping(i);
-                    if c%10==valid_indexes[0]%10{
-                        return Move { piece: b.black_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
-                    }
-                    else{
-                        return Move { piece: b.black_i_to_p.get_piece(valid_indexes[1]).unwrap(), location:loc};
-                    }
-                }
-                if contains_element(&rows, i){
-                    let r=reverse_row_mapping(i);
-                    if r/10==valid_indexes[0]/10{
-                        return Move { piece: b.black_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
-                    }
-                    else{
-                        return Move { piece: b.black_i_to_p.get_piece(valid_indexes[1]).unwrap(), location:loc};
-                    }
-                }
-            }
-        }
-    }
-    return Move {piece:PieceId::Error, location:54321};
-}
-
-pub fn play_std_format_game_full(game:&str){
-    let mut rng = rand::thread_rng(); 
-    let random_bool: bool = rng.gen_bool(0.5); 
-    let og_game=init_board(random_bool); //wanna test ai team as white and black
-
-    let moves=process_moves_string(game);
-
-    for i in moves.iter().enumerate(){
-        let cloned_game=og_game.clone();
-
-
-
+        println!("ABOUT TO MOVE {} {}", new_location, index_to_string(m.location));
+        b = move_piece(b2, m.piece, m.location);
+        let b3 = b.clone();
+        print_all(b3);
     }
 }
 
@@ -202,7 +106,10 @@ pub fn index_to_string(index: usize) -> String {
         return "KS".to_string();
     } else if index == 100 {
         return "QS".to_string();
-    } else {
+    } else if index/10==8{
+        let col_map = ["A", "B", "C", "D", "E", "F", "G", "H"];
+        return format!("Knight Promotion at column {}", col_map[index % 10]);
+    }else {
         let row_map = ["8", "7", "6", "5", "4", "3", "2", "1"];
         let col_map = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
@@ -326,7 +233,9 @@ fn print_all_checked_moves(b:Board){
     let moves=all_moves_gen(&b);
     print!("{}{}", "checking:", moves.checking);
     println!("\n");
-    print!("white: ");
+    if b.turn%2==0{
+    print!("white moves: ");
+    
     for i in b.white_piece_ids.iter(){
         print!("{} at {}: ", map_piece_id_to_kind(*i).to_string(), index_to_string(b.white_indexes.get_index(*i).unwrap()));
         let m=moves.moves.get_moves(*i);
@@ -336,7 +245,8 @@ fn print_all_checked_moves(b:Board){
         println!("\n");
     }
     println!("\n");
-    print!("black: ");
+    }else{
+    print!("black moves: ");
     for i in b.black_piece_ids.iter(){
         print!("{} at {}: ", map_piece_id_to_kind(*i).to_string(), index_to_string(b.black_indexes.get_index(*i).unwrap()));
         let m=moves.moves.get_moves(*i);
@@ -345,6 +255,7 @@ fn print_all_checked_moves(b:Board){
         }
         println!("\n");
     }
+}
 }
 
 
@@ -446,7 +357,7 @@ fn base_error_check(b:Board){
     for i in no_ind{
         let row=i/10;
         let col=i%10;
-        if b.full_board[row][col].team!=Team::N && b.full_board[row][col].value!=0 && b.full_board[row][col].kind!=Kind::Empty{
+        if b.full_board[row][col].team!=Team::N && (b.full_board[row][col].team!=Team::B ||b.full_board[row][col].team!=Team::W) && b.full_board[row][col].kind!=Kind::Empty{
             println!("Error, fullboard should be empty at {}", i);
         }
     }
@@ -468,13 +379,32 @@ pub fn easy_move(b:Board, piece:&str, location:&str)->Board{
     }
 }
 
-fn pause() {
+pub fn pause() {
     let mut input_string = String::new(); 
     println!("Press Enter to continue...");
     let _ = io::stdin().read_line(&mut input_string);
 } 
-pub fn test_b(){
 
+pub fn test_b(){
+    println!("New Game");
+    play_std_format_game_full("1. e4 c5 2. Nf3 Nc6 3. Bb5 d6 4. O-O Bd7 5. Re1 Nf6 6. c3 a6 7. Ba4 c4 8. d4
+cxd3 9. Bg5 e6 10. Qxd3 Be7 11. Bxf6 gxf6 12. Bxc6 Bxc6 13. c4 O-O 14. Nc3 Kh8
+15. Rad1 Rg8 16. Qe3 Qf8 17. Nd4 Rc8 18. f4 Bd7 19. b3 Bd8 20. Nf3 b5 21. Qa7
+Bc7 22. Qxa6 bxc4 23. b4 Qg7 24. g3 d5 25. exd5 Bxf4 26. Kf2 f5 27. gxf4 Qxc3
+28. Qd6 Ba4 29. Rd4 Rg7 30. dxe6 Bc6 31. Ng5 Rxg5 32. Qe5+ Rg7 33. Rd8+ Rxd8 34.
+Qxc3 f6 35. e7 Ra8 36. Qxf6 Be4 37. Rg1 Rxa2+ 38. Ke1");
+    println!("New Game");
+    // play_std_format_game_full("1. f4 e5  2. d4 f5  3. fxe5 f4  4. g3 f3  5. Nxf3 g5  6. Nxg5 Qxg5  7. e4 Qxc1  8. Qxc1 d5  9. exd6 Bxd6  10. Bc4 Bb4+  11. c3 Nc6  12. O-O Ke7  13. h4 Bf5  14. Rxf5 Nh6  15. Qxh6 Rhc8  16. Be6 Nxd4  17. cxb4 Nf3+  18. Rxf3 Rd8  19. b5 c5  20. bxc6 b5  21. c7 Rab8  22. cxb8=Q Rxb8  23. b4 Rg8  24. Qg7+ Kxe6  25. Qxg8+ Ke5  26. Qe8+ Kd6  27. Rd3+ Kc7  28. Qd8+ Kc6  29. Rc3+ Kb7  30. Qc7+ Ka8  31. Qc8");
+    println!("New Game");
+    play_std_format_game_full("1. f4 g5  2. Nf3 Bh6  3. Nxg5 Nf6  4. Nxf7 Kxf7  5. e4 Nxe4  6. Bd3 Ng3  7. Kf2 Bxf4  8. hxg3 Bxg3+  9. Kxg3 Rg8+  10. Kf2 Qf8  11. Ke3 e5  12. Bg6+ Rxg6  13. g4 Rg5  14. Rf1+ Kg7  15. d4 exd4+  16. Kxd4 Qxf1  17. Qf3 Qd1+  18. Bd2 Qxc2  19. Nc3 Qb1  20. Rxb1 Rc5  21. b4 Na6  22. Nd5 Rc4+  23. Kxc4 c5  24. Ne7 d5+  25. Kb5 h5  26. g5 h4  27. g6 h3  28. Qf7+ Kh8  29. Qxd5 h2  30. g7+ Kxg7  31. Nxc8 h1=Q  32. Qf5 Qh5  33. Qxh5 Kg8  34. bxc5 Nc7+  35. Kb4 a5+  36. Kc4 Rb8  37. c6 bxc6  38. Rf1 Rb4+  39. Kc5 Ne6+  40. Kxc6 Nc7  41. Qf7+ Kh8  42. Rh1+ Rh4  43. Rxh4");
+    println!("New Game");
+    play_std_format_game_full("1. e4 e5  2. Bc4 Qg5  3. Be6 fxe6  4. Qg4 Qxg4  5. f4 Qxg2  6. Ne2 Qxh1+  7. Kf2 Nf6  8. Nd4 Ng4+  9. Kg3 Qg1+  10. Kh4 Nxh2  11. f5 exf5  12. exf5 Qg6  13. fxg6 Bc5  14. c4 Bxd4  15. d3 e4  16. c5 exd3  17. Be3 d2  18. Bxd4 d1=Q  19. Kh3 Rf8  20. gxh7 g5  21. h8=Q Rxh8+  22. Kg3 Nf3  23. Kg4 Rh4+  24. Kf5 Nxd4+  25. Kf6 g4  26. Kg7 Rh7+  27. Kxh7 Nf5  28. Kg6 d5  29. c6 bxc6  30. b4 Qd4  31. b5 cxb5  32. Nc3 Qc5  33. Nxd5 Qc1  34. Rxc1 c5  35. Nc7+ Ke7  36. Nxa8 Be6  37. Kg5 Bg8  38. Kxf5 Be6+  39. Kf4 Bxa2  40. Re1+ Be6  41. Rxe6+ Kf8  42. Nc7 c4  43. Re8+ Kg7  44. Ne6+ Kh7  45. Rf8 g3  46. Kf5 Kh6  47. Kf6 Nc6  48. Rh8");
+    println!("New Game");
+    play_std_format_game_full("1. d4 e5  2. d5 e4  3. f4 exf3  4. d6 Qe7  5. g4 fxe2  6. Qxe2 Qxe2+  7. Kxe2 f5  8. gxf5 g5  9. f6 Ne7  10. f7+ Kd8  11. Nf3 g4  12. Ng5 Nd5  13. dxc7+ Ke7  14. Ne4 Ke6  15. Nc5+ Kxf7  16. Bg5 Kg6  17. Bf6 Kh6  18. h4 gxh3  19. Rxh3+ Kg6  20. Bxh8 Bh6  21. Rxh6+ Kxh6  22. c4 Nf4+  23. Kf3 Ng6  24. Bf6 Nf8  25. Be7 Ne6  26. Nxd7 Nf4  27. Bg5+ Kg6  28. Bxf4 Kf5  29. Bd6 Nc6  30. b4 Nxb4  31. c5 b5  32. cxb6 axb6  33. Nxb6 Be6  34. Nd2 Kg5  35. Bc5 Rf8+  36. Kg3 Rxf1  37. Kh2 Kg4  38. Nb3 Kf3  39. Nd4+ Kf2  40. Nxe6+ Kf3  41. Kh3 Rh1+");
+    println!("New Game");
+    play_std_format_game_full("1. f4 g5  2. f5 e5  3. fxe6 f5  4. e7 Bg7  5. exd8=N Kxd8  6. g4 fxg4  7. Nf3 gxf3  8. e4 f2+  9. Ke2 g4  10. Qe1 fxe1=N+"); 
+}
+pub fn old_test_b(){
     let game=init_board(true);
     let game2=game.clone(); 
     print_all(game);

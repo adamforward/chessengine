@@ -1,0 +1,10 @@
+/Users/adamforward/Desktop/chess/chess_rust/target/debug/deps/libactix_utils-85e390eee21c344d.rmeta: /Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-utils-3.0.1/src/lib.rs /Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-utils-3.0.1/src/counter.rs /Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-utils-3.0.1/src/future/mod.rs /Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-utils-3.0.1/src/future/either.rs /Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-utils-3.0.1/src/future/poll_fn.rs /Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-utils-3.0.1/src/future/ready.rs
+
+/Users/adamforward/Desktop/chess/chess_rust/target/debug/deps/actix_utils-85e390eee21c344d.d: /Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-utils-3.0.1/src/lib.rs /Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-utils-3.0.1/src/counter.rs /Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-utils-3.0.1/src/future/mod.rs /Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-utils-3.0.1/src/future/either.rs /Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-utils-3.0.1/src/future/poll_fn.rs /Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-utils-3.0.1/src/future/ready.rs
+
+/Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-utils-3.0.1/src/lib.rs:
+/Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-utils-3.0.1/src/counter.rs:
+/Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-utils-3.0.1/src/future/mod.rs:
+/Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-utils-3.0.1/src/future/either.rs:
+/Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-utils-3.0.1/src/future/poll_fn.rs:
+/Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/actix-utils-3.0.1/src/future/ready.rs:

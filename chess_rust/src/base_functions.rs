@@ -37,7 +37,8 @@ pub fn map_piece_id_to_kind(piece: PieceId) -> Kind {
         | PieceId::Q4
         | PieceId::Q5
         | PieceId::Q6
-        | PieceId::Q7 => Kind::Queen,
+        | PieceId::Q7
+        | PieceId::Q8 => Kind::Queen,
 
         PieceId::R1 | PieceId::R2 => Kind::Rook,
 
@@ -90,42 +91,34 @@ pub fn init_board(ai_team: bool) -> Board {
         Piece {
             team: Team::B,
             kind: Kind::Rook,
-            value: 500,
         },
         Piece {
             team: Team::B,
             kind: Kind::Knight,
-            value: 300,
         },
         Piece {
             team: Team::B,
             kind: Kind::Bishop,
-            value: 300,
         },
         Piece {
             team: Team::B,
             kind: Kind::Queen,
-            value: 900,
         },
         Piece {
             team: Team::B,
             kind: Kind::King,
-            value: 0,
         },
         Piece {
             team: Team::B,
             kind: Kind::Bishop,
-            value: 300,
         },
         Piece {
             team: Team::B,
             kind: Kind::Knight,
-            value: 300,
         },
         Piece {
             team: Team::B,
             kind: Kind::Rook,
-            value: 500,
         },
     ];
 
@@ -133,42 +126,34 @@ pub fn init_board(ai_team: bool) -> Board {
         Piece {
             team: Team::B,
             kind: Kind::Pawn,
-            value: 100,
         },
         Piece {
             team: Team::B,
             kind: Kind::Pawn,
-            value: 100,
         },
         Piece {
             team: Team::B,
             kind: Kind::Pawn,
-            value: 100,
         },
         Piece {
             team: Team::B,
             kind: Kind::Pawn,
-            value: 100,
         },
         Piece {
             team: Team::B,
             kind: Kind::Pawn,
-            value: 100,
         },
         Piece {
             team: Team::B,
             kind: Kind::Pawn,
-            value: 100,
         },
         Piece {
             team: Team::B,
             kind: Kind::Pawn,
-            value: 100,
         },
         Piece {
             team: Team::B,
             kind: Kind::Pawn,
-            value: 100,
         },
     ];
 
@@ -176,42 +161,34 @@ pub fn init_board(ai_team: bool) -> Board {
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
     ];
 
@@ -219,42 +196,34 @@ pub fn init_board(ai_team: bool) -> Board {
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
     ];
 
@@ -262,168 +231,136 @@ pub fn init_board(ai_team: bool) -> Board {
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
     ];
     let row6 = vec![
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
         Piece {
             team: Team::N,
             kind: Kind::Empty,
-            value: 0,
         },
     ];
     let row7 = vec![
         Piece {
             team: Team::W,
             kind: Kind::Pawn,
-            value: 100,
         },
         Piece {
             team: Team::W,
             kind: Kind::Pawn,
-            value: 100,
         },
         Piece {
             team: Team::W,
             kind: Kind::Pawn,
-            value: 100,
         },
         Piece {
             team: Team::W,
             kind: Kind::Pawn,
-            value: 100,
         },
         Piece {
             team: Team::W,
             kind: Kind::Pawn,
-            value: 100,
         },
         Piece {
             team: Team::W,
             kind: Kind::Pawn,
-            value: 100,
         },
         Piece {
             team: Team::W,
             kind: Kind::Pawn,
-            value: 100,
         },
         Piece {
             team: Team::W,
             kind: Kind::Pawn,
-            value: 100,
         },
     ];
     let row8 = vec![
         Piece {
             team: Team::W,
             kind: Kind::Rook,
-            value: 500,
         },
         Piece {
             team: Team::W,
             kind: Kind::Knight,
-            value: 300,
         },
         Piece {
             team: Team::W,
             kind: Kind::Bishop,
-            value: 300,
         },
         Piece {
             team: Team::W,
             kind: Kind::Queen,
-            value: 900,
         },
         Piece {
             team: Team::W,
             kind: Kind::King,
-            value: 0,
         },
         Piece {
             team: Team::W,
             kind: Kind::Bishop,
-            value: 300,
         },
         Piece {
             team: Team::W,
             kind: Kind::Knight,
-            value: 300,
         },
         Piece {
             team: Team::W,
             kind: Kind::Rook,
-            value: 500,
         },
     ];
     full_board.push(row1);
@@ -602,3 +539,9 @@ pub fn find_non_overlap<T: PartialEq + Eq + Hash + Clone>(v1: Vec<T>, v2: Vec<T>
     set1.symmetric_difference(&set2).cloned().collect()
 }
 
+
+fn safe_remove<T: PartialEq>(vec: &mut Vec<T>, element: T) {
+    if let Some(pos) = vec.iter().position(|x| *x == element) {
+        vec.remove(pos);
+    }
+}

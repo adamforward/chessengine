@@ -1,4 +1,6 @@
 use crate::types::{Board, AvailableMovesMap};
+use rand::Rng;
+
 
 
 pub fn game_still_going(board: &Board, checking:bool, white_available_moves:&AvailableMovesMap, black_available_moves:&AvailableMovesMap) -> f64 {
@@ -37,6 +39,6 @@ pub fn game_still_going(board: &Board, checking:bool, white_available_moves:&Ava
     }
 }
 pub fn board_position_advantage_eval() -> f64 {
-    // this is where the neural network will go.
-    return 0.0;
+    let mut rng = rand::thread_rng();
+    rng.gen_range(-1.0..=1.0)
 }

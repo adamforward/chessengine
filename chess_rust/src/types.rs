@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
+use serde::{Deserialize, Serialize};
 
-
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Kind {
     Pawn,
     Rook,
@@ -26,7 +26,8 @@ impl Kind { //this is just for testing.
     }
 }
 
-#[derive(Clone, Debug, Copy, PartialEq)]
+
+#[derive(Clone, Debug, Copy, PartialEq, Serialize, Deserialize)]
 pub enum PieceId { // unique identifiers for every possible piece on the board
     P1,
     P2,
@@ -103,7 +104,7 @@ impl PieceId { //just for testing
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Copy)]
+#[derive(Clone, Debug, PartialEq, Copy, Serialize, Deserialize)]
 pub enum Team { //white, black or empty square
     W,
     B,
@@ -128,20 +129,19 @@ pub enum GameState { //will be used for sending info to front end.
     Stalemate,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Piece {//this is what is represented on the full_board field
     pub team: Team,
     pub kind: Kind,
-    pub value: i32,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Move {//parameters for the move_piece function. 
     pub piece: PieceId,
     pub location: usize,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct IndexMap {//this stores every unique PieceId to its location on the board. 
     //for every index, row is stored in the 10s place and column in stored in the 1s place
     //indexes can range from 0 (A8) to 77 (H1), /10 for row %10 for column
@@ -206,7 +206,7 @@ pub struct TreeNode{
 
 pub type TreeNodeRef = Rc<RefCell<TreeNode>>; //RefCell<T> and Cell<T> is a type that allows for interior mutability,
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct IToPMap {
     pub hash: Vec<Option<PieceId>>,
 }
@@ -230,7 +230,7 @@ impl IToPMap { //index maps to what PieceId is located on that index
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Board {
     pub moves_log: Vec<Move>, //moves_log is just for testing and maybe recording games in the future
     //moves_log is not actually used by the engine
@@ -292,7 +292,11 @@ pub struct AdavantageMap {
     pub board: Board,
 }
 
-
+#[derive(Clone, Debug)]
+pub struct MoveAdvMap{
+    pub advantage:f64,
+    pub m:Move,
+}
 
 pub struct LocationToMove {
     pub location: i32,
@@ -304,9 +308,12 @@ pub struct RenderPiece {
     pub team: Team,
 }
 
-pub struct APIResponse {
-    pub boards_searched: String,
-    pub player_moves: Vec<LocationToMove>,
-    pub full_board: Vec<Vec<RenderPiece>>,
-    pub game_state: GameState,
+pub struct ServerProcessingRe {
+    pub b:Board, 
+    pub pgn:String,
+}
+
+pub struct AIMoveRe{
+    pub m:Move,
+    pub b:Board,
 }

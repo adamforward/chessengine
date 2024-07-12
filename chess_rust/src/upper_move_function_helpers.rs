@@ -1,5 +1,5 @@
 use crate::types::{AllMovesGenRe, AvailableMovesMap,Board, Kind, Piece, PieceId, Team};
-use crate::base_functions::{contains_element, find_overlap, find_non_overlap};
+use crate::base_functions::{find_overlap};
 pub fn w_rook_pinning(board: &Board, pinning: PieceId, overlap: &Vec<usize>) ->Vec<Vec<usize>>{
     let w_pos = board.white_indexes.get_index(pinning).unwrap();
     let w_row = w_pos / 10;
@@ -109,7 +109,7 @@ pub fn b_rook_pinning(board: &Board, pinning: PieceId, overlap: &Vec<usize>) ->V
         let direction = if k_row > b_row { 1 } else { -1 };
         let mut done = false;
 
-        for i in 1..=magnitude-1 {
+        for i in 1..magnitude-1 {
             let j = i * direction;
             match board
                 .full_board
@@ -130,7 +130,7 @@ pub fn b_rook_pinning(board: &Board, pinning: PieceId, overlap: &Vec<usize>) ->V
                     p_indexes = (b_row as i32 + j) * 10 + b_col as i32;
                     done = true;
                 }
-                _ => move_vector.push((b_row as usize + j as usize) * 10 + b_col as usize),
+                _ => move_vector.push((b_row as isize + j as isize) as usize * 10  + b_col as usize),
             }
         }
         if !done{
@@ -147,7 +147,7 @@ pub fn b_rook_pinning(board: &Board, pinning: PieceId, overlap: &Vec<usize>) ->V
         let direction = if k_col > b_col { 1 } else { -1 };
         let mut done = false;
 
-        for i in 1..=magnitude {
+        for i in 1..magnitude {
             let j = i * direction;
             match board
                 .full_board
@@ -161,14 +161,14 @@ pub fn b_rook_pinning(board: &Board, pinning: PieceId, overlap: &Vec<usize>) ->V
                 Some(piece) if piece.team == Team::B => {
                     let mut re=overlap.clone();
                     if magnitude - i == 1 && !done {
-                        re.push((b_row as i32 + j) as usize * 10 + b_col);
+                        re.push((b_row as i32 + j as i32) as usize * 10 + b_col);
                     }
                     return vec![vec![], re];
                 }
                 Some(piece) if piece.team == Team::W && done => {
                     return vec![vec![], overlap.clone()];
                 }
-                _ => move_vector.push(b_row * 10 + (b_col as i32 + j) as usize),
+                _ => move_vector.push(b_row * 10 + (b_col as i32 + j as i32) as usize),
             }
         }
 
@@ -224,7 +224,7 @@ pub fn w_bishop_pinning(
             if piece.team == Team::W && !done{
                 let mut re=overlap.clone();
                 if magnitude - i == 1 && !done{
-                    re.push((w_row as isize + r_inc) as usize + (c_inc + w_col as isize) as usize);
+                    re.push(((w_row as isize + r_inc as isize)*10) as usize + (c_inc + w_col as isize) as usize);
                 }
                 return vec![vec![], re];
             }
@@ -232,10 +232,10 @@ pub fn w_bishop_pinning(
             if piece.team == Team::B && done {
                 return vec![vec![], overlap.clone()];
             } else if piece.team == Team::B && !done {
-                p_indexes = 10 * (w_row as isize + r_inc) as usize + (w_col as isize + c_inc) as usize;
+                p_indexes = 10 * (w_row as isize + r_inc as isize) as usize + (w_col as isize + c_inc as isize) as usize;
                 done = true;
             } else {
-                move_vector.push(10 * (w_row as isize + r_inc) as usize + (w_col as isize + c_inc) as usize);
+                move_vector.push(10 * (w_row as isize + r_inc as isize) as usize + (w_col as isize + c_inc as isize) as usize);
             }
         }
     }
@@ -287,7 +287,7 @@ pub fn b_bishop_pinning(
             if piece.team == Team::B{
                 let mut re=overlap.clone();
                 if magnitude - i == 1 && !done{
-                    re.push(r_inc as usize + c_inc as usize);
+                    re.push(((b_row as isize + r_inc)*10) as usize + (c_inc + b_col as isize) as usize);
                 }
                 return vec![vec![], re];
             }
@@ -295,7 +295,7 @@ pub fn b_bishop_pinning(
             if piece.team == Team::W && done {
                 return vec![vec![], overlap.clone()];
             } else if piece.team == Team::W && !done {
-                p_index = 10 * (b_row as isize + r_inc) + (b_col as isize + c_inc);
+                p_index = 10 * (b_row as isize + r_inc) as usize + (b_col as isize + c_inc) as usize;
                 done = true;
             } else {
                 move_vector.push((10 * (b_row as isize + r_inc) + (b_col as isize + c_inc)) as usize);
@@ -329,7 +329,7 @@ pub fn in_check_directional(board: &Board, re:&AvailableMovesMap, pressuring: Pi
     let king_col = king_index % 10;
     let mut good_moves:Vec<usize> = vec![];
     good_moves.push(pressuring_index);
-
+    let good_moves_for_king=&old_av_map.get_moves(PieceId::K).clone();
     let mut new_av_map=AvailableMovesMap::new();
     // Good moves is the vector that the opponents pieces can move into to block the check.
     let p_row = pressuring_index as isize/10;
@@ -338,7 +338,7 @@ pub fn in_check_directional(board: &Board, re:&AvailableMovesMap, pressuring: Pi
     let c_inc=if p_col<king_col as isize{1} else if p_col>king_col as isize {-1} else {0};
     let magnitude=(p_row-king_row as isize).abs();
     for i in 1..magnitude{
-        let good_m=(p_row +(r_inc*i))*10+p_row+(r_inc*i);
+        let good_m=((p_row +(r_inc*i)))*10+p_col+(c_inc*i);
         good_moves.push(good_m as usize);
     }
 
@@ -374,12 +374,20 @@ pub fn in_check_directional(board: &Board, re:&AvailableMovesMap, pressuring: Pi
         bad_moves_for_king.push(near_side_of_k as usize);
     }
 
-    if team==Team::B{
-        new_av_map.insert_moves(PieceId::K, &find_non_overlap(re.get_moves(PieceId::K), bad_moves_for_king.clone()));
+    let mut re_king_moves:Vec<usize>=vec![];
+    for v in good_moves_for_king.iter(){
+        let mut in_bad_moves=false;
+        for j in bad_moves_for_king.iter(){
+            if v==j{
+                in_bad_moves=true;
+            }
+        }
+        if !in_bad_moves{
+            re_king_moves.push(*v)
+        }
     }
-    else{
-        new_av_map.insert_moves(PieceId::K, &find_non_overlap(re.get_moves(PieceId::K), bad_moves_for_king.clone()));
-    }
+    new_av_map.insert_moves(PieceId::K, &re_king_moves);
+
     return new_av_map;
     
 }

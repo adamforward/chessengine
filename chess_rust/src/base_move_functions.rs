@@ -27,6 +27,9 @@ fn generate_pawn_moves_black(board: &Board, row: usize, col: usize) -> Vec<usize
     // Move forward 1
     if board.full_board[row + 1][col].team == Team::N {
         moves.push((row + 1) * 10 + col);
+        if row==6{
+            moves.push(80+col);//pawn promotion to knight has a different flag
+        }
         // Move forward 2 if on starting row
         if row != 6 {
             if row == 1 && board.full_board[row + 2][col].team == Team::N {
@@ -35,9 +38,14 @@ fn generate_pawn_moves_black(board: &Board, row: usize, col: usize) -> Vec<usize
         }
     }
 
+
+
     // Capture diagonally left
     if col > 0 {
         if board.full_board[row + 1][col - 1].team == Team::W {
+            if row==6{
+                moves.push(80+col-1);//pawn promotion to knight has a different flag
+            }
             moves.push((row + 1) * 10 + col - 1);
         }
         if row == 4
@@ -53,8 +61,12 @@ fn generate_pawn_moves_black(board: &Board, row: usize, col: usize) -> Vec<usize
     // Capture diagonally right
     if col < 7 {
         if board.full_board[row + 1][col + 1].team == Team::W {
+            if row==6{
+                moves.push(80+col+1);//pawn promotion to knight has id of 80 and then col is the place its moving to. 
+            }
             moves.push((row + 1) * 10 + col + 1);
         }
+        
         if row == 4
             && board.full_board[row][col + 1].team == Team::W
             && board.full_board[row][col + 1].kind == Kind::Pawn
@@ -75,6 +87,9 @@ pub fn generate_pawn_moves_white(board: &Board, row: usize, col: usize) -> Vec<u
     if board.full_board[row - 1][col].team == Team::N {
         moves.push((row - 1) * 10 + col);
         // Move forward 2 if on starting row
+        if row==1{
+            moves.push(80+col);//pawn promotion to knight has a different flag
+        }
         if row != 1 {
             if row == 6 && board.full_board[row - 2][col].team == Team::N {
                 moves.push(40 + col);
@@ -86,12 +101,14 @@ pub fn generate_pawn_moves_white(board: &Board, row: usize, col: usize) -> Vec<u
     if col > 0 {
         if board.full_board[row - 1][col - 1].team == Team::B {
             moves.push((row - 1) * 10 + col - 1);
+        if row==1 {
+            moves.push(80+col-1);//pawn promotion to knight has a different flag
         }
+    }
         if row == 3
             && board.full_board[row][col - 1].team == Team::B
             && board.full_board[row][col - 1].kind == Kind::Pawn
         {
-            print!("index1 {}",row*10+col-1);
             if board.white_prime!=1 && board.white_prime % primes1(board.white_i_to_p.get_piece(row*10+col).unwrap()) == 0 && primes1(board.black_i_to_p.get_piece(row*10+col-1).unwrap()) as i16==board.black_prime1{
                 let ep = 20 + col - 1;
                 moves.push(ep);
@@ -102,13 +119,16 @@ pub fn generate_pawn_moves_white(board: &Board, row: usize, col: usize) -> Vec<u
     if col < 7 {
         if board.full_board[row - 1][col + 1].team == Team::B {
             moves.push((row - 1) * 10 + col + 1);
+        if row==1{
+            moves.push(80+col+1);//pawn promotion to knight has a different flag
+        }
         }
         if row == 3
             && board.full_board[row][col + 1].team == Team::B
             && board.full_board[row][col + 1].kind == Kind::Pawn
         {
             // Add the prime number checks here, similar to your Python code
-            if board.white_prime!=1 &&board.white_prime % primes1(board.white_i_to_p.get_piece(row*10+col).unwrap()) == 0 && primes1(board.black_i_to_p.get_piece(row*10+col+1).unwrap()) as i16==board.black_prime1  {
+            if board.white_prime!=1 &&(board.white_prime % primes1(board.white_i_to_p.get_piece(row*10+col).unwrap())) == 0 && primes(col+1) as i16==board.black_prime1  {
                 let ep = 20 + col + 1;
                 moves.push(ep);
             }

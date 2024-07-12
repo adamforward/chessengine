@@ -1,6 +1,7 @@
-use crate::types::{AllMovesGenRe, AvailableMovesMap, Board, Kind, Piece, PieceId, Team};
+use crate::types::{AllMovesGenRe, Team, AvailableMovesMap, Board, Kind, Piece, PieceId};
 use crate::base_functions::{find_overlap, map_piece_id_to_kind, contains_element, primes, primes1, pawn_to_queen, pawn_to_knight, find_non_overlap};
 use crate::base_move_functions::{generate_available_moves};
+use rayon::prelude::*;
 use crate::upper_move_function_helpers::{in_check_directional, b_rook_pinning, w_rook_pinning, b_bishop_pinning, w_bishop_pinning};
 pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
     // Generate available moves gets most of the moves right, and is a much more simple function. 
@@ -56,7 +57,7 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
     let mut w_bishops:Vec<usize>=vec![];
     let mut all_moves:Vec<usize>;
 
-    for piece_id in board.white_piece_ids.iter() {
+    for piece_id in board.white_piece_ids.iter(){
         //generate mappings for white pieces, pieceid is a hash key for an array of indexes it can move to
 
         let piece_index = board.white_indexes.get_index(*piece_id).unwrap();
@@ -136,7 +137,7 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
                 }
             }
         }
-    }
+    };
 
     for i in board.black_piece_ids.iter(){
         //does the same thing as the for loop above, just different team. 
@@ -448,7 +449,7 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
 
         //same code but for white instead of black. 
         if i%10<=6 && i/10<=6{
-            if board.full_board[i/10+1][i%10+1].kind==Kind::Pawn&& board.full_board[i/10+1][i%10-1].team==Team::B{
+            if board.full_board[i/10+1][i%10+1].kind==Kind::Pawn&& board.full_board[i/10+1][i%10+1].team==Team::B{
                 if let Some(pos) = updated_king_moves_white.iter().position(|x| *x == i) {
                     updated_king_moves_white.remove(pos);
                 }
@@ -498,7 +499,9 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
                     }
                }
                if done && magnitude>0{
-                updated_king_moves_white.remove(updated_king_moves_white.iter().position(|x| *x == *location).unwrap());
+                if let Some(pos) = updated_king_moves_white.iter().position(|x| *x == *location) {
+                    updated_king_moves_white.remove(pos);
+                }
                }
             }
         }
@@ -529,7 +532,9 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
                 }
 
                 if done && magnitude>0{
-                    updated_king_moves_white.remove(updated_king_moves_white.iter().position(|x| *x == *location).unwrap());
+                    if let Some(pos) = updated_king_moves_white.iter().position(|x| *x == *location) {
+                        updated_king_moves_white.remove(pos);
+                    }
                 }
             }
 
@@ -551,7 +556,9 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
                     }
                 }
                 if done && magnitude>0{
-                    updated_king_moves_white.remove(updated_king_moves_white.iter().position(|x| *x == *location).unwrap());
+                    if let Some(pos) = updated_king_moves_white.iter().position(|x| *x == *location) {
+                        updated_king_moves_white.remove(pos);
+                    }
                 }
                 }
         }
@@ -566,7 +573,9 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
             let move_row = move_row as usize;
             let move_col = move_col as usize;
             if board.full_board[move_row][move_col].kind==Kind::Knight && board.full_board[move_row][move_col].team==Team::B{
-                updated_king_moves_white.remove(updated_king_moves_white.iter().position(|x| *x == move_row+move_col).unwrap());
+                if let Some(pos) = updated_king_moves_white.iter().position(|x| *x == l as usize) {
+                    updated_king_moves_white.remove(pos);
+                    }
                 }
             }
         }
@@ -586,9 +595,13 @@ else{
 
 
 
-pub fn move_piece(mut board:Board, move_piece:PieceId, indexes:usize)->Board{
+pub fn move_piece(mut board:Board, move_piece:PieceId, mut indexes:usize)->Board{
     //takes a piece id and index and updates the board struct. 
     if board.turn%2==0{
+        let pawn_premotion_queen=indexes/10!=8; 
+        if !pawn_premotion_queen{//pawn to knight promotions have a special identifier. 
+            indexes-=80;//-80 gives you the index its moving to here. 
+        }
         let initial_coords=board.white_indexes.get_index(move_piece).unwrap();
         let new_indexes=indexes;
         let old_row=initial_coords/10;
@@ -596,23 +609,23 @@ pub fn move_piece(mut board:Board, move_piece:PieceId, indexes:usize)->Board{
         let new_row=new_indexes/10;
         let new_col=new_indexes%10;
         board.white_prime1=1;
-        let pawn_premotion_queen=true; //for now, I'm just promoting to queen instead of knight. 
+         
 
-        if move_piece==PieceId::K{
+        if move_piece==PieceId::K && board.prime2%5!=0{
             board.prime2=board.prime2*5;
         }
-        if move_piece==PieceId::R1{
+        if move_piece==PieceId::R1 && board.prime2%2!=0{
             board.prime2=board.prime2*2;
         }//for castling. 
-        if move_piece==PieceId::R2{
+        if move_piece==PieceId::R2 && board.prime2%3!=0{
             board.prime2=board.prime2*3;
         }
 
         if new_indexes==99{//ks castle
-            board.full_board[7][4]=Piece{value:0, kind:Kind::Empty, team:Team::N};
-            board.full_board[7][7]=Piece{value:0, kind:Kind::Empty, team:Team::N};
-            board.full_board[7][6]=Piece{value:0, kind:Kind::King, team:Team::W};
-            board.full_board[7][5]=Piece{value:500, kind:Kind::Rook, team:Team::W};
+            board.full_board[7][4]=Piece{kind:Kind::Empty, team:Team::N};
+            board.full_board[7][7]=Piece{kind:Kind::Empty, team:Team::N};
+            board.full_board[7][6]=Piece{kind:Kind::King, team:Team::W};
+            board.full_board[7][5]=Piece{kind:Kind::Rook, team:Team::W};
             board.white_indexes.change_indexes(PieceId::K, 76);
             board.white_indexes.change_indexes(PieceId::R2, 75);
             board.white_i_to_p.insert_piece(76,PieceId::K);
@@ -624,11 +637,11 @@ pub fn move_piece(mut board:Board, move_piece:PieceId, indexes:usize)->Board{
         }
 
         if new_indexes==100{//qs castle 
-            board.full_board[7][1]=Piece{value:0, kind:Kind::Empty, team:Team::N};
-            board.full_board[7][0]=Piece{value:0, kind:Kind::Empty, team:Team::N};
-            board.full_board[7][4]=Piece{value:0, kind:Kind::Empty, team:Team::N};
-            board.full_board[7][2]=Piece{value:0, kind:Kind::King, team:Team::W};
-            board.full_board[7][3]=Piece{value:500,kind: Kind::Rook, team:Team::W};
+            board.full_board[7][1]=Piece{kind:Kind::Empty, team:Team::N};
+            board.full_board[7][0]=Piece{kind:Kind::Empty, team:Team::N};
+            board.full_board[7][4]=Piece{kind:Kind::Empty, team:Team::N};
+            board.full_board[7][2]=Piece{kind:Kind::King, team:Team::W};
+            board.full_board[7][3]=Piece{kind: Kind::Rook, team:Team::W};
             board.white_indexes.change_indexes(PieceId::K, 72);
             board.white_indexes.change_indexes(PieceId::R1, 73);
             board.white_i_to_p.insert_piece(72, PieceId::K);
@@ -639,9 +652,9 @@ pub fn move_piece(mut board:Board, move_piece:PieceId, indexes:usize)->Board{
             return board;
         }
 
-        let old_points=board.full_board[new_row][new_col].value;//if something is captured. 
+        let capturing=board.full_board[new_row][new_col].team==Team::B;//if something is captured. 
         //always need to remove old piece from mappings and piece ids
-        if map_piece_id_to_kind(move_piece)==Kind::Pawn && new_col != old_col && old_points==0{
+        if map_piece_id_to_kind(move_piece)==Kind::Pawn && new_col != old_col && !capturing{
             //en pessant
             let captured_i = old_row * 10 + new_col as usize;
             let old_piece = board.black_i_to_p.get_piece(captured_i).unwrap();
@@ -655,24 +668,23 @@ pub fn move_piece(mut board:Board, move_piece:PieceId, indexes:usize)->Board{
             board.white_i_to_p.insert_piece(new_indexes, move_piece);
             board.full_board[new_row as usize][new_col as usize] =
                 board.full_board[old_row as usize][old_col as usize].clone();
-            board.full_board[old_row as usize][old_col as usize] = Piece{value:0, kind:Kind::Empty, team:Team::N};
-            board.full_board[old_row as usize][new_col as usize] = Piece{value:0, kind:Kind::Empty, team:Team::N};
+            board.full_board[old_row as usize][old_col as usize] = Piece{kind:Kind::Empty, team:Team::N};
+            board.full_board[old_row as usize][new_col as usize] = Piece{kind:Kind::Empty, team:Team::N};
             board.black_points -= 100;
             board.turn+=1;
             return board;
         }
 
         if map_piece_id_to_kind(move_piece)==Kind::Pawn && (new_row as i32-old_row as i32).abs()==2{
-            board.white_prime=board.white_prime*primes(initial_coords%10);
-            board.white_prime1=primes1(move_piece) as i16;
+            board.white_prime=board.white_prime*primes1(move_piece);
+            board.white_prime1=primes(initial_coords%10) as i16;
         }//update en pessant fields, %primes1(piece) to see if it moved
 
-        if old_points>0{
+        if capturing{
             let b_old_piece=board.black_i_to_p.get_piece(new_indexes).unwrap();
             board.black_piece_ids.remove(board.black_piece_ids.iter().position(|x| *x == b_old_piece).unwrap());
             board.black_indexes.nullify(b_old_piece);
             board.black_i_to_p.nullify(new_indexes);
-            board.black_points-=old_points;
         }//black piece gets captured.
 
         if map_piece_id_to_kind(move_piece)==Kind::Pawn && new_row ==0{
@@ -685,8 +697,8 @@ pub fn move_piece(mut board:Board, move_piece:PieceId, indexes:usize)->Board{
                 board.white_i_to_p.insert_piece(new_indexes, new_piece);
                 board.white_indexes.change_indexes(new_piece, new_indexes);
                 board.white_piece_ids.push(new_piece);
-                board.full_board[new_row][new_col]=Piece{value:900, kind:map_piece_id_to_kind(new_piece), team:Team::W};
-                board.full_board[old_row][old_col]=Piece{value:0, kind:Kind::Empty, team:Team::N};
+                board.full_board[new_row][new_col]=Piece{kind:map_piece_id_to_kind(new_piece), team:Team::W};
+                board.full_board[old_row][old_col]=Piece{kind:Kind::Empty, team:Team::N};
                 board.white_points+=800;
             }
             else{
@@ -695,8 +707,8 @@ pub fn move_piece(mut board:Board, move_piece:PieceId, indexes:usize)->Board{
                 board.white_indexes.change_indexes(new_piece, new_indexes);
                 board.white_piece_ids.push(new_piece);
                 board.white_points+=200;
-                board.full_board[new_row][new_col]=Piece{value:300, kind:map_piece_id_to_kind(new_piece), team:Team::W};
-                board.full_board[old_row][old_col]=Piece{value:0, kind:Kind::Empty, team:Team::N};
+                board.full_board[new_row][new_col]=Piece{kind:map_piece_id_to_kind(new_piece), team:Team::W};
+                board.full_board[old_row][old_col]=Piece{kind:Kind::Empty, team:Team::N};
             }
             board.turn+=1;
             board.white_i_to_p.nullify(initial_coords);
@@ -705,34 +717,39 @@ pub fn move_piece(mut board:Board, move_piece:PieceId, indexes:usize)->Board{
         }
         //update indexes at the end, all the information needs to be correct after calling this function.
         board.full_board[new_row][new_col]=board.full_board[old_row][old_col].clone();
-        board.full_board[old_row][old_col]=Piece{value:0, kind:Kind::Empty, team:Team::N};
+        board.full_board[old_row][old_col]=Piece{kind:Kind::Empty, team:Team::N};
         board.white_i_to_p.nullify(initial_coords);
         board.white_i_to_p.insert_piece(new_indexes, move_piece);
         board.white_indexes.change_indexes(move_piece, new_indexes);
         board.turn+=1;
     }
     else{
+        let pawn_premotion_queen=indexes/10!=8; //for now, I'm just promoting to queen instead of knight.
+        if !pawn_premotion_queen{
+            indexes-=10;
+        }
         let initial_coords=board.black_indexes.get_index(move_piece).unwrap();
         let new_indexes=indexes;
         let old_row=initial_coords/10;
         let old_col=initial_coords%10;
         let new_row=new_indexes/10;
         let new_col=new_indexes%10;
-        if move_piece==PieceId::K{
+        if move_piece==PieceId::K && board.prime2%13!=0{
             board.prime2=board.prime2*13;
         }
-        if move_piece==PieceId::R1{
+        if move_piece==PieceId::R1 && board.prime2%7!=0{
             board.prime2=board.prime2*7;
         }
-        if move_piece==PieceId::R2{
+        if move_piece==PieceId::R2 && board.prime2%11!=0{
             board.prime2=board.prime2*11;
         }
         board.black_prime1=1;
+
         if new_indexes==99{
-            board.full_board[0][4]=Piece{value:0, kind:Kind::Empty, team:Team::N};
-            board.full_board[0][7]=Piece{value:0, kind:Kind::Empty, team:Team::N};
-            board.full_board[0][6]=Piece{value:0, kind:Kind::King, team:Team::B};
-            board.full_board[0][5]=Piece{value:500, kind:Kind::Rook, team:Team::B};
+            board.full_board[0][4]=Piece{kind:Kind::Empty, team:Team::N};
+            board.full_board[0][7]=Piece{kind:Kind::Empty, team:Team::N};
+            board.full_board[0][6]=Piece{kind:Kind::King, team:Team::B};
+            board.full_board[0][5]=Piece{kind:Kind::Rook, team:Team::B};
             board.black_indexes.change_indexes(PieceId::K, 6);
             board.black_indexes.change_indexes(PieceId::R2, 5);
             board.black_i_to_p.nullify(4);
@@ -743,12 +760,13 @@ pub fn move_piece(mut board:Board, move_piece:PieceId, indexes:usize)->Board{
             board.turn+=1;
             return board;
         }
+
         if new_indexes==100{
-            board.full_board[0][1]=Piece{value:0, kind:Kind::Empty, team:Team::N};
-            board.full_board[0][0]=Piece{value:0, kind:Kind::Empty, team:Team::N};
-            board.full_board[0][4]=Piece{value:0, kind:Kind::Empty, team:Team::N};
-            board.full_board[0][2]=Piece{value:0, kind:Kind::King, team:Team::B};
-            board.full_board[0][3]=Piece{value:500, kind:Kind::Rook, team:Team::B};
+            board.full_board[0][1]=Piece{kind:Kind::Empty, team:Team::N};
+            board.full_board[0][0]=Piece{kind:Kind::Empty, team:Team::N};
+            board.full_board[0][4]=Piece{kind:Kind::Empty, team:Team::N};
+            board.full_board[0][2]=Piece{kind:Kind::King, team:Team::B};
+            board.full_board[0][3]=Piece{kind:Kind::Rook, team:Team::B};
             board.black_indexes.change_indexes(PieceId::K, 2);
             board.black_indexes.change_indexes(PieceId::R1, 3);
             board.black_i_to_p.insert_piece(2, PieceId::K);
@@ -759,8 +777,9 @@ pub fn move_piece(mut board:Board, move_piece:PieceId, indexes:usize)->Board{
             board.turn+=1;
             return board;
         }
-        let old_points=board.full_board[new_row][new_col].value;
-        if map_piece_id_to_kind(move_piece)==Kind::Pawn && new_col != old_col && old_points==0{
+
+        let capturing=board.full_board[new_row][new_col].team==Team::W;
+        if map_piece_id_to_kind(move_piece)==Kind::Pawn && new_col != old_col && !capturing{
             //en pessant
             let captured_i = old_row * 10 + new_col as usize;
             let old_piece = board.white_i_to_p.get_piece(captured_i).unwrap();
@@ -774,36 +793,38 @@ pub fn move_piece(mut board:Board, move_piece:PieceId, indexes:usize)->Board{
             board.black_i_to_p.insert_piece(new_indexes, move_piece);
             board.full_board[new_row as usize][new_col as usize] =
                 board.full_board[old_row as usize][old_col as usize].clone();
-            board.full_board[old_row as usize][old_col as usize] = Piece{value:0, kind:Kind::Empty, team:Team::N};
-            board.full_board[old_row as usize][new_col as usize] = Piece{value:0, kind:Kind::Empty, team:Team::N};
+            board.full_board[old_row as usize][old_col as usize] = Piece{kind:Kind::Empty, team:Team::N};
+            board.full_board[old_row as usize][new_col as usize] = Piece{kind:Kind::Empty, team:Team::N};
             board.white_points -= 100;
             board.turn+=1;
             return board;
         }
+
         if map_piece_id_to_kind(move_piece)==Kind::Pawn && (new_row as i32-old_row as i32).abs()==2{
-            board.black_prime=board.black_prime*primes(initial_coords%10);
-            board.black_prime1=primes1(move_piece) as i16;
+            board.black_prime=board.black_prime*primes1(move_piece);
+            board.black_prime1=primes(initial_coords%10) as i16;
         }
-        if old_points>0{
+
+        if capturing{
             let w_old_piece=board.white_i_to_p.get_piece(new_indexes).unwrap();
             board.white_piece_ids.remove(board.white_piece_ids.iter().position(|x| *x == w_old_piece).unwrap());
             board.white_indexes.nullify(w_old_piece);
             board.white_i_to_p.nullify(new_indexes);
-            board.white_points-=old_points;
         }
+
         if map_piece_id_to_kind(move_piece)==Kind::Pawn && new_indexes/10 ==7{
             let pawn_premotion_queen=true;
             board.black_i_to_p.nullify(initial_coords);
             board.black_indexes.nullify(move_piece);
-            board.black_piece_ids.remove(board.white_piece_ids.iter().position(|x| *x == move_piece).unwrap());
+            board.black_piece_ids.remove(board.black_piece_ids.iter().position(|x| *x == move_piece).unwrap());
             board.black_points-=100;
             if pawn_premotion_queen{
                 let new_piece=pawn_to_queen(move_piece);
                 board.black_i_to_p.insert_piece(new_indexes, new_piece);
                 board.black_indexes.change_indexes(new_piece, new_indexes);
                 board.black_piece_ids.push(new_piece);
-                board.full_board[new_row][new_col]=Piece{value:900, kind:map_piece_id_to_kind(new_piece), team:Team::B};
-                board.full_board[old_row][old_col]=Piece{value:0, kind:Kind::Empty, team:Team::N};
+                board.full_board[new_row][new_col]=Piece{kind:map_piece_id_to_kind(new_piece), team:Team::B};
+                board.full_board[old_row][old_col]=Piece{kind:Kind::Empty, team:Team::N};
                 board.black_points+=900;
             }
             else{
@@ -812,14 +833,15 @@ pub fn move_piece(mut board:Board, move_piece:PieceId, indexes:usize)->Board{
                 board.black_indexes.change_indexes(new_piece, new_indexes);
                 board.black_piece_ids.push(new_piece);
                 board.black_points+=300;
-                board.full_board[new_row][new_col]=Piece{value:300, kind:map_piece_id_to_kind(new_piece), team:Team::W};
-                board.full_board[old_row][old_col]=Piece{value:0, kind:Kind::Empty, team:Team::N};
+                board.full_board[new_row][new_col]=Piece{kind:map_piece_id_to_kind(new_piece), team:Team::W};
+                board.full_board[old_row][old_col]=Piece{kind:Kind::Empty, team:Team::N};
             }
             board.turn+=1;
             return board;
         }
+
         board.full_board[new_row][new_col]=board.full_board[old_row][old_col].clone();
-        board.full_board[old_row][old_col]=Piece{value:0, kind:Kind::Empty, team:Team::N};
+        board.full_board[old_row][old_col]=Piece{kind:Kind::Empty, team:Team::N};
         board.black_i_to_p.nullify(initial_coords);
         board.black_i_to_p.insert_piece(new_indexes, move_piece);
         board.black_indexes.change_indexes(move_piece, new_indexes);
