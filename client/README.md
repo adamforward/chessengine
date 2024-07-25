@@ -21,7 +21,7 @@ Right now pretty much everything is in `src/components/ChessBoard.tsx`
 ## Roadmap
 
 - [x] Draggable Chessboard in the UI
-- [ ] Make it look less shit
+- [x] Make the UI look less horrible
 - [x] Can complete a game of chess
 - [ ] Can restart a game of chess
 - [ ] Center the damn chess board and style it a bit

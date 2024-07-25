@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { Chess, PieceSymbol } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import {
@@ -9,6 +9,8 @@ import {
 
 export default function PlayRandomMoveEngine() {
   const [game, setGame] = useState(new Chess());
+
+  const [savedGame, setSavedGame] = useState<string | null>(null);
 
   const [gameOver, setGameOver] = useState<boolean>(false);
 
@@ -30,7 +32,7 @@ export default function PlayRandomMoveEngine() {
     [game, promotion]
   );
 
-  const makeRandomMove = useCallback(() => {
+  const makeOpponentMove = useCallback(() => {
     console.log("making random move");
     const possibleMoves = game.moves();
     if (game.isGameOver() || game.isDraw() || possibleMoves.length === 0)
@@ -45,23 +47,25 @@ export default function PlayRandomMoveEngine() {
   const onDrop = useCallback(
     (sourceSquare: Square, targetSquare: Square, piece: Piece) => {
       console.log("dropping");
-      console.log("source", sourceSquare);
-      console.log("target", targetSquare);
-      if (targetSquare.includes("8") || targetSquare.includes("1")) {
+      if (
+        piece.toLocaleLowerCase().includes("p") &&
+        (targetSquare.includes("8") || targetSquare.includes("1"))
+      ) {
         console.log("PROMOTIONS!", piece);
-        // return false;
+        return false;
       }
 
       const move = makeAMove({
         from: sourceSquare,
         to: targetSquare,
-        // this is the problem :)
       });
 
-      // illegal move
-      if (move === null) return false;
+      if (move === null) {
+        console.log("move is null");
+        return false;
+      }
 
-      setTimeout(makeRandomMove, 200);
+      setTimeout(makeOpponentMove, 200);
 
       return true;
     },
@@ -75,18 +79,15 @@ export default function PlayRandomMoveEngine() {
       promoteToSquare?: Square
     ) => {
       console.log("promoting");
-      if (!piece || !promoteFromSquare || !promoteToSquare) return false;
+      if (!piece || !promoteFromSquare || !promoteToSquare) {
+        console.log("missing promotion data");
+        return false;
+      }
 
       const prom = convertToChessJs(piece);
 
       setPromotion(prom);
 
-      // it seems like making the promotion switches the turn...
-      makeAMove({
-        from: promoteFromSquare,
-        to: promoteToSquare,
-        // promotion: prom,
-      });
       return true;
     },
     [promotion, setPromotion]
@@ -97,22 +98,14 @@ export default function PlayRandomMoveEngine() {
       {/* Developer tools */}
       <div className="w-full flex justify-center gap-4 items-center mt-4">
         {gameOver && (
-          <div className="absolute bg-white rounded-lg p-4 shadow-md">
+          <div className="absolute bg-white rounded-lg p-4 shadow-md top-1/2">
             <h1>The game is over, want to restart?</h1>
           </div>
         )}
         <button
           onClick={() => {
             console.log(game.fen());
-          }}
-          className="border-2 rounded-lg text-center p-2"
-        >
-          Dump
-        </button>
-        <button
-          onClick={() => {
-            console.log(game.fen());
-            setGame(new Chess(game.fen()));
+            setSavedGame(game.fen());
           }}
           className="border-2 rounded-lg text-center p-2"
         >
@@ -120,12 +113,14 @@ export default function PlayRandomMoveEngine() {
         </button>
         <button
           onClick={() => {
-            setGame(new Chess());
+            if (savedGame != null) setGame(new Chess(savedGame));
+            else setGame(new Chess());
           }}
           className="border-2 rounded-lg text-center p-2"
         >
           Reset
         </button>
+        <div className="text-xs">Saved Game: {savedGame}</div>
       </div>
 
       {/* Chessboard */}
