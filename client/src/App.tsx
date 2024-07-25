@@ -2,7 +2,7 @@ import ChessBoard from "./components/ChessBoard";
 
 function App() {
   return (
-    <div className="h-[50vw] w-[50vw] flex flex-col items-center justify-center">
+    <div className="font-roboto overflow-hidden h-screen w-screen text-slate-200 text-lg flex items-center bg-zinc-900 justify-center">
       <ChessBoard />
     </div>
   );

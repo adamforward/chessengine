@@ -8,9 +8,9 @@ import {
 } from "react-chessboard/dist/chessboard/types";
 
 export default function PlayRandomMoveEngine() {
-  const [game, setGame] = useState(
-    new Chess("8/P1Q5/4k3/5R2/1p1b4/4P3/2P1bP2/2B1KB1R w K - 1 36")
-  );
+  const [game, setGame] = useState(new Chess());
+
+  const [gameOver, setGameOver] = useState<boolean>(false);
 
   const [promotion, setPromotion] = useState<string>("q");
 
@@ -22,6 +22,9 @@ export default function PlayRandomMoveEngine() {
         game.move({ ...move, promotion }); // Make the move
         const updatedGame = new Chess(game.fen()); // Create a new Chess instance with the updated FEN
         setGame(updatedGame); // Update the state with the new instance
+        if (updatedGame.isGameOver() || updatedGame.isDraw()) {
+          setGameOver(true);
+        }
       }
     },
     [game, promotion]
@@ -90,22 +93,55 @@ export default function PlayRandomMoveEngine() {
   );
 
   return (
-    <>
-      <button
-        onClick={() => {
-          console.log(game.fen());
-        }}
-        className="border-2 rounded-lg text-center p-2"
-      >
-        Dump
-      </button>
-      <Chessboard
-        id="chessboard"
-        position={game.fen()}
-        onPieceDrop={onDrop}
-        onPromotionPieceSelect={onPromotion}
-      />
-    </>
+    <div className="w-full h-full flex flex-col items-center justify-center">
+      {/* Developer tools */}
+      <div className="w-full flex justify-center gap-4 items-center mt-4">
+        {gameOver && (
+          <div className="absolute bg-white rounded-lg p-4 shadow-md">
+            <h1>The game is over, want to restart?</h1>
+          </div>
+        )}
+        <button
+          onClick={() => {
+            console.log(game.fen());
+          }}
+          className="border-2 rounded-lg text-center p-2"
+        >
+          Dump
+        </button>
+        <button
+          onClick={() => {
+            console.log(game.fen());
+            setGame(new Chess(game.fen()));
+          }}
+          className="border-2 rounded-lg text-center p-2"
+        >
+          Save Game
+        </button>
+        <button
+          onClick={() => {
+            setGame(new Chess());
+          }}
+          className="border-2 rounded-lg text-center p-2"
+        >
+          Reset
+        </button>
+      </div>
+
+      {/* Chessboard */}
+      <div className="flex flex-grow items-center justify-center">
+        <Chessboard
+          id="chessboard"
+          boardWidth={600}
+          customBoardStyle={{
+            borderRadius: "4px",
+          }}
+          position={game.fen()}
+          onPieceDrop={onDrop}
+          onPromotionPieceSelect={onPromotion}
+        />
+      </div>
+    </div>
   );
 }
 
