@@ -19,7 +19,7 @@ pub fn generate_top_moves(num_moves: i32, parent:TreeNode)->Vec<TreeNodeRef> {
             for &j in moves.iter(){
                 let param_move=curr_game.clone();
                 let potential_move=move_piece(param_move, i, j);
-                let advantage=board_position_advantage_eval();
+                let advantage=board_position_advantage_eval(&potential_move.full_board, curr_game.ai_team_is_white);
                 advantage_map.push(AdavantageMap{board:potential_move, advantage});
             }
         }
@@ -30,7 +30,7 @@ pub fn generate_top_moves(num_moves: i32, parent:TreeNode)->Vec<TreeNodeRef> {
             for &j in moves.iter(){
                 let param_move=curr_game.clone();
                 let potential_move=move_piece(param_move, i, j);
-                let advantage=board_position_advantage_eval();
+                let advantage=board_position_advantage_eval(&potential_move.full_board, curr_game.ai_team_is_white);
                 advantage_map.push(AdavantageMap{board:potential_move, advantage});
             }
         }
@@ -102,7 +102,7 @@ fn clear_children(curr_game: &TreeNodeRef) {
     current.borrow_mut().children = Vec::new(); 
 }
 
-pub fn search(curr_game: &Rc<RefCell<TreeNode>>, depth: i32, width: i32, alpha_beta: f64, mut mini_max: f64) -> f64 {
+pub fn search(curr_game: &Rc<RefCell<TreeNode>>, depth: i32, width: i32, alpha_beta: f32, mut mini_max: f32) -> f32 {
     let curr_game_borrowed = curr_game.borrow();
     
     if (curr_game_borrowed.level == depth || 

@@ -1,7 +1,6 @@
 use crate::types::{AllMovesGenRe, Team, AvailableMovesMap, Board, Kind, Piece, PieceId};
 use crate::base_functions::{find_overlap, map_piece_id_to_kind, contains_element, primes, primes1, pawn_to_queen, pawn_to_knight, find_non_overlap};
 use crate::base_move_functions::{generate_available_moves};
-use rayon::prelude::*;
 use crate::upper_move_function_helpers::{in_check_directional, b_rook_pinning, w_rook_pinning, b_bishop_pinning, w_bishop_pinning};
 pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
     // Generate available moves gets most of the moves right, and is a much more simple function. 

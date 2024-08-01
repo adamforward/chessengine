@@ -394,7 +394,7 @@ fn ai_move(b:Board)->AIMoveRe{
     let mut the_move:Move=Move {piece:PieceId::Error, location:10000};
     let mut re:AIMoveRe=AIMoveRe{b:b.clone(),m:the_move};
     if b.turn%2==0{
-        let mut smallest_mm:f64=10000000000.0;
+        let mut smallest_mm:f32=10000000000.0;
         for i in b.white_piece_ids.iter(){
             for j in av_moves.moves.get_moves(*i).iter(){
                 let searching_b=move_piece(b.clone(), *i,*j);
@@ -410,7 +410,7 @@ fn ai_move(b:Board)->AIMoveRe{
         return re;
     }
     else{
-        let mut smallest_mm:f64=10000000000.0;
+        let mut smallest_mm:f32=10000000000.0;
         for i in b.black_piece_ids.iter(){
             for j in av_moves.moves.get_moves(*i).iter(){
                 let searching_b=move_piece(b.clone(), *i,*j);
