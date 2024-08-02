@@ -126,10 +126,10 @@ pub fn search(curr_game: &Rc<RefCell<TreeNode>>, depth: i32, width: i32, alpha_b
         let children = generate_top_moves(width, cloned_game.borrow().clone());
         
         curr_game.borrow_mut().children = children.clone();
-
+        //curr_game.borrow_mut.children=children.clone();
         for child in children {
             if mini_max<alpha_beta{
-                mini_max=0.0;
+                mini_max=0.0;//get out if minimax<alphabeta
                 break;
             }
 

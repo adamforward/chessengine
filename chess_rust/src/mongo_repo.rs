@@ -17,6 +17,7 @@ pub struct UserGame {
 pub struct AppState {
     pub mongo_collection: Collection<bson::Document>,
 }
+
 impl MongoRepo {
     pub async fn init() -> Self {
         let client_options = ClientOptions::parse("mongodb://localhost:27017").await.unwrap();
