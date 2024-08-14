@@ -11,8 +11,8 @@ pub fn generate_top_moves(num_moves: i32, parent:TreeNode)->Vec<TreeNodeRef> {
     let level=parent.level;
     let parent_ref=Some(Rc::new(RefCell::new(parent)));
     let new_info=all_moves_gen(&curr_game);
-    if game_still_going(&curr_game, new_info.checking, &new_info.moves, &new_info.moves)!=0.1{
-        curr_game.ai_advantage=game_still_going(&curr_game, new_info.checking, &new_info.moves, &new_info.moves); 
+    if game_still_going(&curr_game, new_info.checking, &new_info.moves)!=0.1{
+        curr_game.ai_advantage=game_still_going(&curr_game, new_info.checking, &new_info.moves); 
         return vec![]; //need deterministic instead of statistical analysis code to evaluate if game is over
     }
 
@@ -23,7 +23,7 @@ pub fn generate_top_moves(num_moves: i32, parent:TreeNode)->Vec<TreeNodeRef> {
             for &j in moves.iter(){
                 let param_move=curr_game.clone();
                 let potential_move=move_piece(param_move, i, j);
-                let advantage=board_position_advantage_eval(&potential_move.full_board, curr_game.ai_team_is_white);
+                let advantage=board_position_advantage_eval(&potential_move.full_board, curr_game.ai_team_is_white, "");
                 advantage_map.push(AdavantageMap{board:potential_move, advantage});
             }
         }
@@ -35,7 +35,7 @@ pub fn generate_top_moves(num_moves: i32, parent:TreeNode)->Vec<TreeNodeRef> {
             for &j in moves.iter(){
                 let param_move=curr_game.clone();
                 let potential_move=move_piece(param_move, i, j);
-                let advantage=board_position_advantage_eval(&potential_move.full_board, curr_game.ai_team_is_white);
+                let advantage=board_position_advantage_eval(&potential_move.full_board, curr_game.ai_team_is_white, "");
                 advantage_map.push(AdavantageMap{board:potential_move, advantage});
             }
         }
@@ -55,13 +55,13 @@ pub fn generate_top_moves(num_moves: i32, parent:TreeNode)->Vec<TreeNodeRef> {
     for e in advantage_map.iter_mut() { // check for checkmates and assign ai advantage properties
         e.board.ai_advantage=e.advantage;
 
-        if ai_turn && game_still_going(&curr_game, new_info.checking, &new_info.moves, &new_info.moves)==1.0{
+        if ai_turn && game_still_going(&curr_game, new_info.checking, &new_info.moves)==1.0{
             e.board.ai_advantage=1.0;//always move into checkmate
             return vec![Rc::new(RefCell::new(TreeNode { parent:parent_ref.clone(), children:vec![],game:e.board.clone(), level}))];
             
         }
 
-        if !ai_turn && game_still_going(&curr_game, new_info.checking, &new_info.moves, &new_info.moves)==0.0{
+        if !ai_turn && game_still_going(&curr_game, new_info.checking, &new_info.moves)==0.0{
             e.board.ai_advantage=0.0; //always assume player moves into checkmate
             return vec![Rc::new(RefCell::new(TreeNode { parent:parent_ref.clone(), children:vec![],game:e.board.clone(), level}))];
         }

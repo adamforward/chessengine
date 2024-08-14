@@ -1,9 +1,0 @@
-/Users/adamforward/Desktop/chess/chess_rust/target/debug/deps/libfutures_macro-d6fe37ab9ca98605.dylib: /Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-macro-0.3.30/src/lib.rs /Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-macro-0.3.30/src/executor.rs /Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-macro-0.3.30/src/join.rs /Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-macro-0.3.30/src/select.rs /Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-macro-0.3.30/src/stream_select.rs
-
-/Users/adamforward/Desktop/chess/chess_rust/target/debug/deps/futures_macro-d6fe37ab9ca98605.d: /Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-macro-0.3.30/src/lib.rs /Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-macro-0.3.30/src/executor.rs /Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-macro-0.3.30/src/join.rs /Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-macro-0.3.30/src/select.rs /Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-macro-0.3.30/src/stream_select.rs
-
-/Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-macro-0.3.30/src/lib.rs:
-/Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-macro-0.3.30/src/executor.rs:
-/Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-macro-0.3.30/src/join.rs:
-/Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-macro-0.3.30/src/select.rs:
-/Users/adamforward/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-macro-0.3.30/src/stream_select.rs:

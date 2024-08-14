@@ -4,11 +4,15 @@ version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[target.aarch64-apple-darwin]
+rustflags = ["-C", "link-arg=-stdlib=libc++"]
+
 
 [dependencies]
 rayon = "1.5"
+tch = "0.17.0"
+half = "1.7.1"
 rand = "0.8.5"
-half = "2.0"
 actix-web = "4"
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }

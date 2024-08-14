@@ -391,7 +391,7 @@ pub fn process_server_response(pgn:String, last_game:Option<Board>)->ServerProce
 
 fn ai_move(b:Board)->AIMoveRe{
     let av_moves=all_moves_gen(&b);
-    if game_still_going(&b, av_moves.checking, &av_moves.moves, &av_moves.moves)!=0.0{
+    if game_still_going(&b, av_moves.checking, &av_moves.moves)!=0.0{
         return AIMoveRe{m:Move {piece:PieceId::Error, location:10000}, b:b.clone()};// end the game here.
     }
     let mut the_move:Move=Move {piece:PieceId::Error, location:10000};

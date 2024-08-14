@@ -260,7 +260,7 @@ fn print_all_checked_moves(b:Board){
 
 
 
-fn print_all(game:Board){
+pub fn print_all(game:Board){
     print!("turn:");
     println!("{}", game.turn);
     let game2=game.clone();
