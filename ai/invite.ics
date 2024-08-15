@@ -1,0 +1,17 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//salesforce.com//Calendar//EN
+BEGIN:VEVENT
+UID:a1bHo000002y9NwIAI
+DTSTAMP;TZID="America/Denver":20240806T104409
+SUMMARY:Sat Sonecha's Continuing Education Academic Advising
+DESCRIPTION:I look forward to meeting with you to answer questions you may have, review your class schedule, and discuss your future academic plans. Please state your desired appointment outcome when scheduling a meeting.
+CATEGORIES:salesforce.com
+CREATED;TZID="America/Denver":20240806T104409
+LAST-MODIFIED;TZID="America/Denver":20240806T104409
+STATUS:CONFIRMED
+LOCATION:Video Advising - https://cuboulder.zoom.us/my/satsonecha
+DTSTART;TZID="America/Denver":20240807T134500
+DTEND;TZID="America/Denver":20240807T141500
+END:VEVENT
+END:VCALENDAR
