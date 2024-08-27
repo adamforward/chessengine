@@ -1,17 +1,20 @@
 use std::{cell::RefCell, rc::Rc};
 use crate::upper_move_functions::{all_moves_gen, move_piece};
 use crate::ai_functions::{ game_still_going, board_position_advantage_eval};
-use crate::types::{TreeNode, TreeNodeRef, Board, AdavantageMap, PieceId};
+use crate::types::{TreeNode, Board, AdavantageMap, PieceId, NeuralNetworkSelector, GameStateIdentifiers};
+use tch::{nn, nn::VarStore, Device, Tensor};
+use crate::test_board::{print_all};
 
-pub fn generate_top_moves(num_moves: i32, parent:TreeNode)->Vec<TreeNodeRef> {
+
+pub fn generate_top_moves(num_moves: i32, parent:TreeNode)->Vec<TreeNode> {
+    let gamestates:GameStateIdentifiers=GameStateIdentifiers::new();
     //this takes a game, makes all available moves then returns a vector of length num_moves for the highest win probabilities
     //board_position_advantage_eval evaluates the probability that ai wins by checkmate via convolutional nn
     //this function is set up to use the datatypes that allow for a tree structure
     let mut curr_game=parent.game.clone();
     let level=parent.level;
-    let parent_ref=Some(Rc::new(RefCell::new(parent)));
     let new_info=all_moves_gen(&curr_game);
-    if game_still_going(&curr_game, new_info.checking, &new_info.moves)!=0.1{
+    if game_still_going(&curr_game, new_info.checking, &new_info.moves)!=gamestates.in_play{
         curr_game.ai_advantage=game_still_going(&curr_game, new_info.checking, &new_info.moves); 
         return vec![]; //need deterministic instead of statistical analysis code to evaluate if game is over
     }
@@ -23,7 +26,7 @@ pub fn generate_top_moves(num_moves: i32, parent:TreeNode)->Vec<TreeNodeRef> {
             for &j in moves.iter(){
                 let param_move=curr_game.clone();
                 let potential_move=move_piece(param_move, i, j);
-                let advantage=board_position_advantage_eval(&potential_move.full_board, curr_game.ai_team_is_white, "");
+                let advantage=board_position_advantage_eval(&potential_move.full_board, curr_game.ai_team_is_white, &NeuralNetworkSelector::Model4);
                 advantage_map.push(AdavantageMap{board:potential_move, advantage});
             }
         }
@@ -35,13 +38,13 @@ pub fn generate_top_moves(num_moves: i32, parent:TreeNode)->Vec<TreeNodeRef> {
             for &j in moves.iter(){
                 let param_move=curr_game.clone();
                 let potential_move=move_piece(param_move, i, j);
-                let advantage=board_position_advantage_eval(&potential_move.full_board, curr_game.ai_team_is_white, "");
+                let advantage=board_position_advantage_eval(&potential_move.full_board, curr_game.ai_team_is_white, &NeuralNetworkSelector::Model4);
                 advantage_map.push(AdavantageMap{board:potential_move, advantage});
             }
         }
     }
 
-    let mut re:Vec<TreeNodeRef>=vec![];
+    let mut re:Vec<TreeNode>=vec![];
     let ai_turn:bool;
     if ((curr_game.turn+1)%2==0 && curr_game.ai_team_is_white) || ((curr_game.turn+1)%2==1 && !curr_game.ai_team_is_white){
         ai_turn=true;
@@ -55,97 +58,73 @@ pub fn generate_top_moves(num_moves: i32, parent:TreeNode)->Vec<TreeNodeRef> {
     for e in advantage_map.iter_mut() { // check for checkmates and assign ai advantage properties
         e.board.ai_advantage=e.advantage;
 
-        if ai_turn && game_still_going(&curr_game, new_info.checking, &new_info.moves)==1.0{
-            e.board.ai_advantage=1.0;//always move into checkmate
-            return vec![Rc::new(RefCell::new(TreeNode { parent:parent_ref.clone(), children:vec![],game:e.board.clone(), level}))];
+        if ai_turn && game_still_going(&curr_game, new_info.checking, &new_info.moves)==gamestates.ai_checkmate{
+            e.board.ai_advantage=gamestates.ai_checkmate;//always move into checkmate
+            return vec![TreeNode { children:vec![],game:e.board.clone(), level}];
             
         }
 
-        if !ai_turn && game_still_going(&curr_game, new_info.checking, &new_info.moves)==0.0{
-            e.board.ai_advantage=0.0; //always assume player moves into checkmate
-            return vec![Rc::new(RefCell::new(TreeNode { parent:parent_ref.clone(), children:vec![],game:e.board.clone(), level}))];
+        if !ai_turn && game_still_going(&curr_game, new_info.checking, &new_info.moves)==gamestates.player_checkmate{
+            e.board.ai_advantage=gamestates.player_checkmate; //always assume player moves into checkmate
+            return vec![TreeNode { children:vec![],game:e.board.clone(), level}];
         }
-
+        let mut count=0; 
         for i in immut_advantage_map.iter(){
-            let mut count=0; 
             if ai_turn{
-                if e.board.ai_advantage<i.board.ai_advantage{
+                if e.advantage>i.advantage{
                     count+=1;//ai wants to maximize ai win probability
-                }
-                if count<=num_moves{
-                    re.push(Rc::new(RefCell::new(TreeNode { parent:parent_ref.clone(), children:vec![],game:e.board.clone(), level})));
                 }
             }
             else{
-                if e.board.ai_advantage>i.board.ai_advantage{
+                if e.advantage<i.advantage{
                     count+=1;//player wants to minimize it
                 }
-                if count<=num_moves{
-                    re.push(Rc::new(RefCell::new(TreeNode { parent:parent_ref.clone(), children:vec![],game:e.board.clone(), level})));
-                }
             }
+        }
+        if count<=num_moves{
+            re.push(TreeNode { children:vec![], game:e.board.clone(), level:level+1});
         }
     }
     re
 }
 
-fn clear_children(curr_game: &TreeNodeRef) {
-    let mut current = curr_game.clone();
-    while current.borrow().level != 0 {
-        current.borrow_mut().children = Vec::new();
-        let parent = Rc::clone(&current);
-        current = parent; 
+pub fn search(mut curr_game: TreeNode, depth: i32, width: i32, mut alpha: f32, mut beta: f32) -> f32 {      
+    let game_states=GameStateIdentifiers::new();
+    // Check for terminal conditions
+    if curr_game.level == depth || 
+       curr_game.game.ai_advantage == game_states.ai_checkmate || 
+       curr_game.game.ai_advantage == game_states.stalemate || 
+       curr_game.game.ai_advantage == game_states.player_checkmate {
+        return curr_game.game.ai_advantage; 
     }
-    current.borrow_mut().children = Vec::new(); 
-}
 
-pub fn search(curr_game: &Rc<RefCell<TreeNode>>, depth: i32, width: i32, alpha_beta: f32, mut mini_max: f32) -> f32 {
-    let curr_game_borrowed = curr_game.borrow();
-    
-    if (curr_game_borrowed.level == depth || 
-        curr_game_borrowed.game.ai_advantage == 1.0 || 
-        curr_game_borrowed.game.ai_advantage == 0.0 || 
-        curr_game_borrowed.game.ai_advantage == 0.5) && 
-        mini_max < alpha_beta { // tree ends with checkmate or stalemate or end of search depth
-            
-        if curr_game_borrowed.game.ai_advantage < mini_max {
-            //return the player's best move if this happens
-            return curr_game_borrowed.game.ai_advantage; 
-        }
+    let cloned_game = curr_game.clone();
+    let children = generate_top_moves(width, cloned_game); // Generate the top `width` moves
+    curr_game.children = children.clone();
 
-    } else if (curr_game_borrowed.level == depth || 
-               curr_game_borrowed.game.ai_advantage == 0.0 || 
-               curr_game_borrowed.game.ai_advantage == 1.0 || 
-               curr_game_borrowed.game.ai_advantage == 0.5) && 
-              mini_max > alpha_beta {
-                //exit tree if there is a player's final move that is better than another searched option
-                clear_children(curr_game);
-    } else {
-
-        let cloned_game = curr_game.clone();
-        let children = generate_top_moves(width, cloned_game.borrow().clone());
-        
-        curr_game.borrow_mut().children = children.clone();
-        //curr_game.borrow_mut.children=children.clone();
+    if curr_game.level % 2 == 1 { // Maximizing ai
+        let mut max_eval = -f32::INFINITY;
         for child in children {
-            if mini_max<alpha_beta{
-                mini_max=0.0;//get out if minimax<alphabeta
-                break;
+            let eval = search(child, depth, width, alpha, beta);
+            max_eval = max_eval.max(eval);
+            alpha = alpha.max(eval);
+            if beta <= alpha {
+                break; 
             }
-
-            let mm = search(&child, depth, width, alpha_beta, mini_max);
-
-            if mini_max > mm {
-                mini_max = mm;
-            }
-
-            
         }
+        return max_eval;
+    } else { 
+        let mut min_eval = f32::INFINITY;
+        for child in children {
+            let eval = search(child, depth, width, alpha, beta);
+            min_eval = min_eval.min(eval);
+            beta = beta.min(eval);
+            if beta <= alpha {
+                break; 
+            }
+        }
+        return min_eval;
     }
-
-    if mini_max<alpha_beta{
-        return 0.0;
-    }
-    
-    mini_max
 }
+
+

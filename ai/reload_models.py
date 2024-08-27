@@ -11,6 +11,7 @@ model_paths = [
     "/Users/adamforward/Desktop/chess/chess_rust/src/chess_cnn_model_final_f16_3_convs.pt",
     "/Users/adamforward/Desktop/chess/chess_rust/src/chess_cnn_model_final_f16.pt"
 ]
+model_paths = ["/Users/adamforward/Desktop/chess/chess_rust/src/model4.pt"]
 
 # Function to load, set to eval mode, and re-save the model or state_dict as CPU
 

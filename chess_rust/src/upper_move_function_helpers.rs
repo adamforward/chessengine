@@ -109,7 +109,7 @@ pub fn b_rook_pinning(board: &Board, pinning: PieceId, overlap: &Vec<usize>) ->V
         let direction = if k_row > b_row { 1 } else { -1 };
         let mut done = false;
 
-        for i in 1..magnitude-1 {
+        for i in 1..magnitude {
             let j = i * direction;
             match board
                 .full_board
@@ -161,7 +161,7 @@ pub fn b_rook_pinning(board: &Board, pinning: PieceId, overlap: &Vec<usize>) ->V
                 Some(piece) if piece.team == Team::B => {
                     let mut re=overlap.clone();
                     if magnitude - i == 1 && !done {
-                        re.push((b_row as i32 + j as i32) as usize * 10 + b_col);
+                        re.push((b_row as i32) as usize * 10 + (b_col as i32 + j as i32) as usize);
                     }
                     return vec![vec![], re];
                 }
@@ -365,12 +365,12 @@ pub fn in_check_directional(board: &Board, re:&AvailableMovesMap, pressuring: Pi
     let oppossite_side_of_k=(king_row as isize+r_inc)*10+king_col as isize+c_inc;
     let mut bad_moves_for_king:Vec<usize>=vec![];
 
-    if 7 >= oppossite_side_of_k / 10 && oppossite_side_of_k / 10 >= 0 && 7 >= oppossite_side_of_k % 10 && oppossite_side_of_k % 10 >= 0 {
+    if 7 >= oppossite_side_of_k / 10 && oppossite_side_of_k / 10 >= 0 && 7 >= oppossite_side_of_k % 10 && oppossite_side_of_k % 10 >= 0 && oppossite_side_of_k as usize!=pressuring_index{
         bad_moves_for_king.push(oppossite_side_of_k as usize);
     }
 
     let near_side_of_k=(king_row as isize-r_inc)*10+king_col as isize-c_inc;
-    if near_side_of_k as usize!=pressuring_index{
+    if 7 >= near_side_of_k / 10 && near_side_of_k / 10 >= 0 && 7 >= near_side_of_k % 10 && near_side_of_k % 10 >= 0 && near_side_of_k as usize!=pressuring_index{
         bad_moves_for_king.push(near_side_of_k as usize);
     }
 
@@ -378,7 +378,7 @@ pub fn in_check_directional(board: &Board, re:&AvailableMovesMap, pressuring: Pi
     for v in good_moves_for_king.iter(){
         let mut in_bad_moves=false;
         for j in bad_moves_for_king.iter(){
-            if v==j{
+            if *v==*j{
                 in_bad_moves=true;
             }
         }

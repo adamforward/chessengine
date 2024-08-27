@@ -15,6 +15,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use serde::{Deserialize, Serialize};
 use crate::ai_functions::{test_neural_networks};
+use crate::types::{NeuralNetworkSelector};
 use crate::mongo_repo::{AppState, get_last_game_state, insert_game_state, delete_game_state};
 use crate::server_processing::{process_server_response};
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -22,6 +23,8 @@ struct Move{
     pgn:String,
     user_id:String
 }
+use tch::{nn, nn::VarStore, Device, Tensor};
+use crate::test_board::{write_to_moves_validator, test_search};
 
 // struct AppState {
 //     counter: Mutex<usize>,
@@ -90,109 +93,15 @@ struct Move{
 //     }
 // }
 
+// fn main() {
+//     let a = Tensor::randn(&[5, 5], (tch::Kind::Float, tch::Device::Cpu));
+//     println!("{:?}", a);
+// }
+
 fn main() {
-    println!("Current directory: {:?}", std::env::current_dir());
-
-    let mut chess_cnn_checkpoint_epoch_15_score = 0;
-    let mut chess_cnn_model_final_3x3x3x3_f16_score = 0;
-    let mut chess_cnn_model_final_f16_3_convs_score = 0;
-    let mut chess_cnn_model_final_f16_score = 0;
-    let mut chess_cnn_model_final_3xpool2xconv_f32_score = 0;
-
-    // Define the absolute paths to your models
-    let chess_cnn_checkpoint_epoch_15 = "/Users/adamforward/Desktop/chess/chess_rust/src/chess_cnn_checkpoint_epoch_15.pt";
-    let chess_cnn_model_final_3x3x3x3_f16 = "/Users/adamforward/Desktop/chess/chess_rust/src/chess_cnn_model_final_3x3x3x3_f16.pt";
-    let chess_cnn_model_final_f16_3_convs = "/Users/adamforward/Desktop/chess/chess_rust/src/chess_cnn_model_final_3xpool2xconv_f16.pt";
-    let chess_cnn_model_final_f16 = "/Users/adamforward/Desktop/chess/chess_rust/src/chess_cnn_model_final_f16_3_convs.pt";
-    let chess_cnn_model_final_3xpool2xconv_f32 = "/Users/adamforward/Desktop/chess/chess_rust/src/chess_cnn_model_final_f16.pt";
-
-    for _ in 0..100 {
-        // Test chess_cnn_checkpoint_epoch_15 against chess_cnn_model_final_3x3x3x3_f16
-        let game1 = test_neural_networks(chess_cnn_checkpoint_epoch_15, chess_cnn_model_final_3x3x3x3_f16);
-        chess_cnn_checkpoint_epoch_15_score += game1;
-        chess_cnn_model_final_3x3x3x3_f16_score -= game1;
-        let game2 = test_neural_networks(chess_cnn_model_final_3x3x3x3_f16, chess_cnn_checkpoint_epoch_15);
-        chess_cnn_checkpoint_epoch_15_score -= game2;
-        chess_cnn_model_final_3x3x3x3_f16_score += game2;
-
-        // Test chess_cnn_checkpoint_epoch_15 against chess_cnn_model_final_f16_3_convs
-        let game3 = test_neural_networks(chess_cnn_checkpoint_epoch_15, chess_cnn_model_final_f16_3_convs);
-        chess_cnn_checkpoint_epoch_15_score += game3;
-        chess_cnn_model_final_f16_3_convs_score -= game3;
-        let game4 = test_neural_networks(chess_cnn_model_final_f16_3_convs, chess_cnn_checkpoint_epoch_15);
-        chess_cnn_checkpoint_epoch_15_score -= game4;
-        chess_cnn_model_final_f16_3_convs_score += game4;
-
-        // Test chess_cnn_checkpoint_epoch_15 against chess_cnn_model_final_f16
-        let game5 = test_neural_networks(chess_cnn_checkpoint_epoch_15, chess_cnn_model_final_f16);
-        chess_cnn_checkpoint_epoch_15_score += game5;
-        chess_cnn_model_final_f16_score -= game5;
-        let game6 = test_neural_networks(chess_cnn_model_final_f16, chess_cnn_checkpoint_epoch_15);
-        chess_cnn_checkpoint_epoch_15_score -= game6;
-        chess_cnn_model_final_f16_score += game6;
-
-        // Test chess_cnn_checkpoint_epoch_15 against chess_cnn_model_final_3xpool2xconv_f32
-        let game7 = test_neural_networks(chess_cnn_checkpoint_epoch_15, chess_cnn_model_final_3xpool2xconv_f32);
-        chess_cnn_checkpoint_epoch_15_score += game7;
-        chess_cnn_model_final_3xpool2xconv_f32_score -= game7;
-        let game8 = test_neural_networks(chess_cnn_model_final_3xpool2xconv_f32, chess_cnn_checkpoint_epoch_15);
-        chess_cnn_checkpoint_epoch_15_score -= game8;
-        chess_cnn_model_final_3xpool2xconv_f32_score += game8;
-
-        // Test chess_cnn_model_final_3x3x3x3_f16 against chess_cnn_model_final_f16_3_convs
-        let game9 = test_neural_networks(chess_cnn_model_final_3x3x3x3_f16, chess_cnn_model_final_f16_3_convs);
-        chess_cnn_model_final_3x3x3x3_f16_score += game9;
-        chess_cnn_model_final_f16_3_convs_score -= game9;
-        let game10 = test_neural_networks(chess_cnn_model_final_f16_3_convs, chess_cnn_model_final_3x3x3x3_f16);
-        chess_cnn_model_final_3x3x3x3_f16_score -= game10;
-        chess_cnn_model_final_f16_3_convs_score += game10;
-
-        // Test chess_cnn_model_final_3x3x3x3_f16 against chess_cnn_model_final_f16
-        let game11 = test_neural_networks(chess_cnn_model_final_3x3x3x3_f16, chess_cnn_model_final_f16);
-        chess_cnn_model_final_3x3x3x3_f16_score += game11;
-        chess_cnn_model_final_f16_score -= game11;
-        let game12 = test_neural_networks(chess_cnn_model_final_f16, chess_cnn_model_final_3x3x3x3_f16);
-        chess_cnn_model_final_3x3x3x3_f16_score -= game12;
-        chess_cnn_model_final_f16_score += game12;
-
-        // Test chess_cnn_model_final_3x3x3x3_f16 against chess_cnn_model_final_3xpool2xconv_f32
-        let game13 = test_neural_networks(chess_cnn_model_final_3x3x3x3_f16, chess_cnn_model_final_3xpool2xconv_f32);
-        chess_cnn_model_final_3x3x3x3_f16_score += game13;
-        chess_cnn_model_final_3xpool2xconv_f32_score -= game13;
-        let game14 = test_neural_networks(chess_cnn_model_final_3xpool2xconv_f32, chess_cnn_model_final_3x3x3x3_f16);
-        chess_cnn_model_final_3x3x3x3_f16_score -= game14;
-        chess_cnn_model_final_3xpool2xconv_f32_score += game14;
-
-        // Test chess_cnn_model_final_f16_3_convs against chess_cnn_model_final_f16
-        let game15 = test_neural_networks(chess_cnn_model_final_f16_3_convs, chess_cnn_model_final_f16);
-        chess_cnn_model_final_f16_3_convs_score += game15;
-        chess_cnn_model_final_f16_score -= game15;
-        let game16 = test_neural_networks(chess_cnn_model_final_f16, chess_cnn_model_final_f16_3_convs);
-        chess_cnn_model_final_f16_3_convs_score -= game16;
-        chess_cnn_model_final_f16_score += game16;
-
-        // Test chess_cnn_model_final_f16_3_convs against chess_cnn_model_final_3xpool2xconv_f32
-        let game17 = test_neural_networks(chess_cnn_model_final_f16_3_convs, chess_cnn_model_final_3xpool2xconv_f32);
-        chess_cnn_model_final_f16_3_convs_score += game17;
-        chess_cnn_model_final_3xpool2xconv_f32_score -= game17;
-        let game18 = test_neural_networks(chess_cnn_model_final_3xpool2xconv_f32, chess_cnn_model_final_f16_3_convs);
-        chess_cnn_model_final_f16_3_convs_score -= game18;
-        chess_cnn_model_final_3xpool2xconv_f32_score += game18;
-
-        // Test chess_cnn_model_final_f16 against chess_cnn_model_final_3xpool2xconv_f32
-        let game19 = test_neural_networks(chess_cnn_model_final_f16, chess_cnn_model_final_3xpool2xconv_f32);
-        chess_cnn_model_final_f16_score += game19;
-        chess_cnn_model_final_3xpool2xconv_f32_score -= game19;
-        let game20 = test_neural_networks(chess_cnn_model_final_3xpool2xconv_f32, chess_cnn_model_final_f16);
-        chess_cnn_model_final_f16_score -= game20;
-        chess_cnn_model_final_3xpool2xconv_f32_score += game20;
-    }
-    println!("chess_cnn_model_final_f16 score {}", chess_cnn_model_final_f16_score);
-    println!("chess_cnn_checkpoint_epoch_15_score {}",chess_cnn_checkpoint_epoch_15_score);
-    println!("chess_cnn_model_final_3x3x3x3_f16_score {}", chess_cnn_model_final_3x3x3x3_f16_score);
-    println!("chess_cnn_model_final_f16_3_convs_score {}", chess_cnn_model_final_f16_3_convs_score);
-    println!("chess_cnn_model_final_3xpool2xconv_f32_score {}", chess_cnn_model_final_3xpool2xconv_f32_score);
+    test_search();
 }
+
 
 // #[actix_web::main]
 // async fn main() -> std::io::Result<()> {

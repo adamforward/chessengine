@@ -9,9 +9,14 @@ pub struct MongoRepo {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
+pub struct MongoBoard {
+    pub pgn: String,
+    pub board: Board,
+}
+#[derive(Serialize, Deserialize, Clone)]
 pub struct UserGame {
     pub user_id: String,
-    pub board: Board,
+    pub board: MongoBoard,
 }
 
 pub struct AppState {
@@ -41,11 +46,11 @@ impl MongoRepo {
     }
 }
 
-pub async fn get_last_game_state(collection: &Collection<Document>, user_id: &str) -> Option<Board> {
+pub async fn get_last_game_state(collection: &Collection<Document>, user_id: &str) -> Option<MongoBoard> {
     let filter = doc! { "user_id": user_id };
     match collection.find_one(filter, None).await {
         Ok(Some(doc)) => {
-            if let Ok(board) = bson::from_document::<Board>(doc) {
+            if let Ok(board) = bson::from_document::<MongoBoard>(doc) {
                 Some(board)
             } else {
                 None
@@ -58,7 +63,7 @@ pub async fn get_last_game_state(collection: &Collection<Document>, user_id: &st
 pub async fn insert_game_state(
     collection: &Collection<Document>,
     user_id: &str,
-    board: &Board,
+    board: &MongoBoard,
 ) -> Result<(), mongodb::error::Error> {
     let mut board_doc = bson::to_document(board).unwrap();
     board_doc.insert("user_id", user_id);

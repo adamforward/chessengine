@@ -1,7 +1,12 @@
 use crate::base_functions::{init_board, map_piece_id_to_kind, find_non_overlap, find_overlap, contains_element};
-use crate::types::{Board, Piece, PieceId, Team, Kind};
+use crate::types::{Board, Piece, PieceId, Team, Kind, Move, TreeNode, NeuralNetworkSelector};
 use crate::upper_move_functions::{all_moves_gen, move_piece};
+use crate::search_functions::{search, generate_top_moves};
 use crate::server_processing::{pgn_to_hash};
+use crate::ai_functions::{get_next_move, game_still_going};
+use std::fs::File;
+use std::fs::OpenOptions;
+use std::io::Write;
 // use rand::Rng;
 use std::io;
 // use crate::base_move_functions::{generate_available_moves};
@@ -45,6 +50,8 @@ pub fn reverse_col_mapping(b:&str)->usize{
         "a"=>0, "b"=>1, "c"=>2, "d"=>3, "e"=>4, "f"=>5, "g"=>6, "h"=>7, _ =>100000,
     }
 }
+
+
 
 pub fn map_standard_format_to_kind(input: &str)->Kind{
     match input{
@@ -263,6 +270,7 @@ fn print_all_checked_moves(b:Board){
 pub fn print_all(game:Board){
     print!("turn:");
     println!("{}", game.turn);
+    println!("ai advantage {}", game.ai_advantage);
     let game2=game.clone();
     println!("Black Prime {}", game.black_prime);
     println!("Black Prime1 {}", game.black_prime1);
@@ -275,9 +283,14 @@ pub fn print_all(game:Board){
     print_piece_ids(game2);
     print_mappings(game3);
     print_all_checked_moves(game5);
+    //print_moves_log(&game.moves_log);
     base_error_check(game4);
 }
-
+fn print_moves_log(moves_log: &Vec<Move>) {
+    for (index, mv) in moves_log.iter().enumerate() {
+        println!("Move {}: {}", index + 1, mv.to_string());
+    }
+}
 fn base_error_check(b:Board){
     let mut white_king_found=false;
     let mut black_king_found=false;
@@ -579,4 +592,157 @@ pub fn old_test_b(){
     pause();
     let game87 = easy_move(game86.clone(), "C2", "C1");
     print_all(game87);
+}
+
+fn map_my_data_model_to_fen(b: &Vec<Vec<Piece>>) -> String {
+    let mut fen = String::new(); // Initialize as an empty String
+    let mut count = 0;
+
+    for i in b.iter() {
+        if count != 0 {
+            fen.push('/'); // Append '/' directly
+        }
+        count += 1;
+
+        let mut empty_count = 0;
+        for j in i.iter() {
+            if j.kind == Kind::Empty {
+                empty_count += 1;
+            } else {
+                if empty_count != 0 {
+                    fen.push_str(&empty_count.to_string()); // Append the number of empty squares
+                    empty_count = 0;
+                }
+                match j.team {
+                    Team::W => {
+                        let piece_char = match j.kind {
+                            Kind::Pawn => "P",
+                            Kind::Queen => "Q",
+                            Kind::Rook => "R",
+                            Kind::Knight => "N",
+                            Kind::Bishop => "B",
+                            _ => "K", // King
+                        };
+                        fen.push_str(piece_char); // Append the piece character
+                    }
+                    Team::B => {
+                        let piece_char = match j.kind {
+                            Kind::Pawn => "p",
+                            Kind::Queen => "q",
+                            Kind::Rook => "r",
+                            Kind::Knight => "n",
+                            Kind::Bishop => "b",
+                            _ => "k", // King
+                        };
+                        fen.push_str(piece_char); // Append the piece character
+                    }
+                    _=>{}
+                }
+            }
+        }
+
+        // If there are empty squares at the end of the row, add them to the FEN string
+        if empty_count != 0 {
+            fen.push_str(&empty_count.to_string());
+        }
+    }
+
+    fen // Return the final FEN string
+}
+
+fn get_std_format(index:usize)->String{
+    if index==99{
+        return "0-0".to_string();
+    }
+    if index==100{
+        return "0-0-0".to_string();
+    }
+    let row_map = ["8", "7", "6", "5", "4", "3", "2", "1"];
+    let col_map = ["a", "b", "c", "d", "e", "f", "g", "h"];
+    return format!("{}{}", col_map[index%10], row_map[index/10]);
+}
+
+pub fn write_to_moves_validator(file_path: &str) {
+    let white = NeuralNetworkSelector::Model5;
+    let black = NeuralNetworkSelector::Model3;
+
+    // Open the file in append mode
+    let mut file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(file_path)
+        .expect("Unable to open file");
+
+    for i in 0..=100 {
+        let mut game = init_board(true);
+        let mut done = false;
+        while !done {
+            if game.turn % 2 == 0 {
+                game = get_next_move(game, &white);
+            } else {
+                game = get_next_move(game, &black);
+            }
+
+            let fen: &str = &map_my_data_model_to_fen(&game.full_board);
+            let moves = all_moves_gen(&game).moves;
+            let mut standard_format_moves: Vec<String> = vec![];
+
+            if game.turn % 2 == 0 {
+                for j in game.white_piece_ids.iter() {
+                    for k in moves.get_moves(*j).iter() {
+                        if k/10==8{
+                            continue;
+                        }
+                        let std_f_move = format!(
+                            "{}{}",
+                            &get_std_format(game.white_indexes.get_index(*j).unwrap()),
+                            &get_std_format(*k)
+                        );
+                        standard_format_moves.push(std_f_move);
+                    }
+                }
+            } else {
+                for j in game.black_piece_ids.iter() {
+                    for k in moves.get_moves(*j).iter() {
+                        if k/10==8{
+                            continue;
+                        }//don't need the knight promotion here
+                        let std_f_move = format!(
+                            "{}{}",
+                            &get_std_format(game.black_indexes.get_index(*j).unwrap()),
+                            &get_std_format(*k)
+                        );
+                        standard_format_moves.push(std_f_move);
+                    }
+                }
+            }
+
+            // Write FEN and moves to file
+            let turn:&str;
+            if game.turn%2==0{
+                turn="white"
+            }else{
+                turn="black"
+            }
+            if let Err(e) = writeln!(
+                file,
+                "Turn: {} FEN: {}\nMoves: {:?}\n",
+                turn,
+                fen,
+                standard_format_moves.join(", ")
+            ) {
+                eprintln!("Could not write to file: {}", e);
+            }
+
+            if game_still_going(&game, all_moves_gen(&game).checking, &moves) != 0.1 || game.turn > 150 {
+                done = true;
+            }
+        }
+    }
+}
+pub fn test_search(){
+    let b=init_board(true);
+    let searching_treenode=TreeNode{game:b.clone(), level:0, children:vec![]};
+    let biggest_mm=100.0;
+    let new_mm=search(searching_treenode, 5, 5, biggest_mm, -1.0);//will tweak depth and width params
 }

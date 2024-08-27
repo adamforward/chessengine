@@ -10,7 +10,7 @@ rustflags = ["-C", "link-arg=-stdlib=libc++"]
 
 [dependencies]
 rayon = "1.5"
-tch = "0.17.0"
+tch = { path = "../tch-rs" }
 half = "1.7.1"
 rand = "0.8.5"
 actix-web = "4"

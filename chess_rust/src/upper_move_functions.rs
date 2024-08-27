@@ -1,4 +1,4 @@
-use crate::types::{AllMovesGenRe, Team, AvailableMovesMap, Board, Kind, Piece, PieceId};
+use crate::types::{AllMovesGenRe, Team, AvailableMovesMap, Board, Kind, Piece, PieceId, Move};
 use crate::base_functions::{find_overlap, map_piece_id_to_kind, contains_element, primes, primes1, pawn_to_queen, pawn_to_knight, find_non_overlap};
 use crate::base_move_functions::{generate_available_moves};
 use crate::upper_move_function_helpers::{in_check_directional, b_rook_pinning, w_rook_pinning, b_bishop_pinning, w_bishop_pinning};
@@ -42,7 +42,6 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
     
     // King moves are generated first to look for overlap
     let mut w_king_moves = generate_available_moves(&board, w_king_index / 10, w_king_index % 10);
-
     let mut b_king_moves = generate_available_moves(&board, b_king_index / 10, b_king_index % 10);
     
     // These represent moves that both the other team and the king generated moves have in common
@@ -62,7 +61,7 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
         let piece_index = board.white_indexes.get_index(*piece_id).unwrap();
         let curr_row = piece_index / 10;
         let curr_col = piece_index % 10;
-        if (curr_row as isize-b_king_index as isize/10).abs()<=1 && (curr_col as isize-b_king_index as isize%10).abs()<=1 && !white_turn{
+        if (curr_row as isize-(b_king_index as isize)/10).abs()<=1 && (curr_col as isize-(b_king_index as isize)%10).abs()<=1{
             //This is used later and is for making sure you cannot move into check
             adjacent_to_black_k.push(piece_index);
         }
@@ -90,7 +89,7 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
             white_checking.push(*piece_id);
         }
 
-        if board.full_board[curr_row][curr_col].kind==Kind::Rook || board.full_board[curr_row][curr_col].kind==Kind::Queen && checking==false && !white_turn{
+        if board.full_board[curr_row][curr_col].kind==Kind::Rook || board.full_board[curr_row][curr_col].kind==Kind::Queen && !white_turn{
             w_rooks.push(piece_index);
             //w_rooks is used at the end of the function
             let mut temp=w_rook_pinning(&board, *piece_id, &over_b);// temp is only 2 elements
@@ -107,7 +106,7 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
             }
         }
         
-        if board.full_board[curr_row][curr_col].kind==Kind::Bishop || board.full_board[curr_row][curr_col].kind==Kind::Queen && checking==false && !white_turn{
+        if board.full_board[curr_row][curr_col].kind==Kind::Bishop || board.full_board[curr_row][curr_col].kind==Kind::Queen && !white_turn{
             //works the same as w_rook_pinning, just different logic in the function. 
             w_bishops.push(piece_index);
             let mut temp=w_bishop_pinning(&board, *piece_id, &over_b);
@@ -155,7 +154,7 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
 
         let mut checking=false;
 
-        if (curr_row as isize-(w_king_index as isize)/10).abs()<=1 && (curr_col as isize-w_king_index as isize%10).abs()<=1 &&white_turn{
+        if (curr_row as isize-(w_king_index as isize)/10).abs()<=1 && (curr_col as isize-(w_king_index as isize)%10).abs()<=1{
             adjacent_to_white_k.push(piece_index);
         }
 
@@ -165,7 +164,7 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
             black_checking.push(piece);
         }
 
-        if board.full_board[curr_row][curr_col].kind==Kind::Rook || board.full_board[curr_row][curr_col].kind==Kind::Queen && checking==false && white_turn{
+        if board.full_board[curr_row][curr_col].kind==Kind::Rook || board.full_board[curr_row][curr_col].kind==Kind::Queen && white_turn{
             b_rooks.push(piece_index);
             let mut temp=b_rook_pinning(&board, piece, &over_w);
             over_w=temp[1].clone();
@@ -179,7 +178,7 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
         }
 
 
-        if board.full_board[curr_row][curr_col].kind==Kind::Bishop || board.full_board[curr_row][curr_col].kind==Kind::Queen && checking==false && white_turn{
+        if board.full_board[curr_row][curr_col].kind==Kind::Bishop || board.full_board[curr_row][curr_col].kind==Kind::Queen && white_turn{
             b_bishops.push(piece_index);
             let mut temp=b_bishop_pinning(&board, piece, &over_w);
             over_w=temp[1].clone();
@@ -209,6 +208,7 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
             }
         }
     }
+
     //castling move identifiers
     if w_ks==true{
         w_king_moves.push(99);
@@ -280,10 +280,11 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
                 }
             }
         }
+
+
     //need to update king moves again after the checking function for the checks below.  
     let mut updated_king_moves_black=black_moves.get_moves(PieceId::K);
     let mut updated_king_moves_white=white_moves.get_moves(PieceId::K);
-        
         
     //this is for when there is a knight attacking a piece adjacent to the king (ex white knight attacking white pawn next to black king)
     let knight_moves: [(isize, isize); 8] = [
@@ -302,15 +303,30 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
             //once again, this is one of the many unessessary checks to do on both turns until debugging is done. 
 
             //special pawn case, moves are not generated that attack empty squares next to king in generate_available_moves for pawns. 
-            if i%10<=6 && i/10<=6{
+            if i%10<=6 && i/10<=6 &&i!=99 &&i!=100{
                 if board.full_board[i/10+1][i%10+1].kind==Kind::Pawn && board.full_board[i/10+1][i%10+1].team==Team::W{
                     if let Some(pos) = updated_king_moves_black.iter().position(|x| *x == i) {
                         updated_king_moves_black.remove(pos);
                     }
                 }
             }
-            if i%10>=1 && i/10<=6{
+            if i%10>=1 && i/10<=6 &&i!=99 &&i!=100{
                 if board.full_board[i/10+1][i%10-1].kind==Kind::Pawn && board.full_board[i/10+1][i%10-1].team==Team::W{
+                    if let Some(pos) = updated_king_moves_black.iter().position(|x| *x == i) {
+                        updated_king_moves_black.remove(pos);
+                    }
+                }
+            }
+            //very obscure case, but if the pawn is on top of the king or rook you can't castle
+            if i==99{
+                if board.full_board[1][4].kind==Kind::Pawn && board.full_board[1][7].team==Team::W{
+                    if let Some(pos) = updated_king_moves_black.iter().position(|x| *x == i) {
+                        updated_king_moves_black.remove(pos);
+                    }
+                }
+            }
+            if i==100{
+                if board.full_board[1][0].kind==Kind::Pawn && board.full_board[1][4].team==Team::W{
                     if let Some(pos) = updated_king_moves_black.iter().position(|x| *x == i) {
                         updated_king_moves_black.remove(pos);
                     }
@@ -325,269 +341,295 @@ pub fn all_moves_gen(board: &Board)->AllMovesGenRe {
                 }
             }
             }
+            //no longer iterating through black king moves
             
+
             let b_king_r=board.black_indexes.get_index(PieceId::K).unwrap()/10;
             let b_king_c=board.black_indexes.get_index(PieceId::K).unwrap()%10;
+
             for location in adjacent_to_black_k.iter(){
-            let l=*location as isize;
-            let mut done=true;
-            
-            for j in w_bishops.iter(){
-                //this is for if there's a white piece attacked by the white bishop adjacent to the black king. 
-                //taking the white piece for the king would move into check.  
-                let k=*j as isize;
-                if k==l{
-                    continue;
-                }
-                if (k/10 as isize - b_king_r as isize).abs() != (k%10 - b_king_c as isize).abs(){//already handled in pinning functions
-                if (k/10 as isize - l/10 as isize).abs() == (k%10 as isize - l%10 as isize).abs(){
-                        let direction_r:isize = if k/10 > l/10 { 1 } else { -1 };
-                        let direction_c:isize= if k%10 > l%10 { 1 } else { -1 };
-                        let magnitude=(k/10 as isize - l/10 as isize).abs();
-                        for scalar_inc in 1..magnitude{
-                            let r_inc=l/10+(scalar_inc*direction_r);
-                            let c_inc=l%10+(scalar_inc*direction_c);
-                            if let Some(piece) = board
-                                .full_board
-                                .get((r_inc) as usize)
-                                .and_then(|row| row.get(c_inc as usize))
-                        {
-                            if piece.team!=Team::N{
-                                done=false; 
+                //this is checking to see if the black king can capture adjacent white pieces. 
+                let adjacent_white_piece=*location as isize;
+                
+                for j in w_bishops.iter(){
+                    //this is for if there's a white piece attacked by the white bishop adjacent to the black king. 
+                    //taking the white piece for the king would move into check.  
+                    let white_bishop_checking=*j as isize;
+                    if white_bishop_checking==adjacent_white_piece{
+                        continue;//don't do comparison check on the same two pieces
+                    }
+                    let mut done=true;
+
+
+                    if (white_bishop_checking/10 as isize - adjacent_white_piece/10 as isize).abs() == (white_bishop_checking%10 as isize - adjacent_white_piece%10 as isize).abs(){
+                            //this is the check to see if they're on the same diagonal
+                            let direction_r:isize = if white_bishop_checking/10 > adjacent_white_piece/10 { 1 } else { -1 };
+                            let direction_c:isize= if white_bishop_checking%10 > adjacent_white_piece%10 { 1 } else { -1 };
+                            //counting from white piece adj to king to white bishop. 
+                            let magnitude=(white_bishop_checking/10 as isize - adjacent_white_piece/10 as isize).abs();
+                            for scalar_inc in 1..magnitude{
+                                let r_inc=adjacent_white_piece/10+(scalar_inc*direction_r);
+                                let c_inc=adjacent_white_piece%10+(scalar_inc*direction_c);
+                                if let Some(piece) = board
+                                    .full_board
+                                    .get((r_inc) as usize)
+                                    .and_then(|row| row.get(c_inc as usize))
+                            {
+                                if piece.team!=Team::N{//this means something is pressure on the white piece
+                                    done=false; 
+                                }
                             }
+                    }
+                    if done{
+                        if let Some(pos) = updated_king_moves_black.iter().position(|x| *x == *location) {
+                                updated_king_moves_black.remove(pos);
                         }
-                }
-                if done && magnitude>0{
-                    if let Some(pos) = updated_king_moves_black.iter().position(|x| *x == *location) {
-                            updated_king_moves_black.remove(pos);
+                    }
                     }
                 }
-                }
-            }
-            }
 
-            for i in w_rooks.iter(){
-                let k=*i as isize;
-                if k==l{
-                    continue;
-                }
-                if l/10==k/10{
-                    let magnitude=(l%10-k%10).abs();
-                    let direction:isize = if k%10 > l%10 { 1 } else { -1 };
-                    let mut done=true;
-                    for scalar_inc in 1..magnitude{
-                        let c_inc=l%10+(scalar_inc*direction);
-                        if let Some(piece) = board
-                                .full_board
-                                .get((l/10) as usize)
-                                .and_then(|row| row.get((c_inc) as usize))
-                        {
-                            if piece.team!=Team::N{
-                                done=false; 
-                                break;
+                for i in w_rooks.iter(){
+                    let pressuring_rook=*i as isize;
+                    if pressuring_rook==adjacent_white_piece{
+                        continue;
+                    }
+                    if adjacent_white_piece/10==pressuring_rook/10{
+                        //if they're on the same row
+                        let magnitude=(adjacent_white_piece%10-pressuring_rook%10).abs();
+                        let direction:isize = if pressuring_rook%10 > adjacent_white_piece%10 { 1 } else { -1 };
+                        //counting from adj white piece up to rook
+                        let mut done=true;
+                        for scalar_inc in 1..magnitude{
+                            let c_inc=adjacent_white_piece%10+(scalar_inc*direction);
+
+                            if let Some(piece) = board
+                                    .full_board
+                                    .get((adjacent_white_piece/10) as usize)
+                                    .and_then(|row| row.get((c_inc) as usize))
+                            {
+                                if piece.team!=Team::N{
+                                    done=false; 
+                                }
+                            }
+                        }
+                        
+                        if done && magnitude>0{
+                            if let Some(pos) = updated_king_moves_black.iter().position(|x| *x == *location) {
+                                updated_king_moves_black.remove(pos);
                             }
                         }
                     }
                     
-                    if done && magnitude>0{
-                        if let Some(pos) = updated_king_moves_black.iter().position(|x| *x == *location) {
-                            updated_king_moves_black.remove(pos);
+                    if adjacent_white_piece%10==pressuring_rook%10{
+                        //if on the same column, count rows
+                        let magnitude=(adjacent_white_piece/10-pressuring_rook/10).abs();
+                        let direction:isize = if pressuring_rook/10 > adjacent_white_piece/10 { 1 } else { -1 };
+                        let mut done=true;
+
+                        for scalar_inc in 1..magnitude{
+                            let r_inc=adjacent_white_piece/10+(scalar_inc*direction);
+                            if let Some(piece) = board
+                                    .full_board
+                                    .get(r_inc as usize)
+                                    .and_then(|row| row.get((adjacent_white_piece%10) as usize))
+                            {
+                                if piece.team!=Team::N{
+                                    done=false; 
+                                }
+                            }
                         }
-                    }
+
+                        if done && magnitude>0{
+                            if let Some(pos) = updated_king_moves_black.iter().position(|x| *x == *location) {
+                                updated_king_moves_black.remove(pos);
+                            }
+                        }
+                        }
                 }
+
                 
-                if l%10==k%10{
-                    let magnitude=(l/10-k/10).abs();
-                    let direction:isize = if k/10 > l/10 { 1 } else { -1 };
-                    let mut done=true;
-                    for scalar_inc in 1..magnitude{
-                        let r_inc=l/10+(scalar_inc*direction);
-                        if let Some(piece) = board
-                                .full_board
-                                .get(r_inc as usize)
-                                .and_then(|row| row.get((l%10) as usize))
-                        {
-                            if piece.team!=Team::N{
-                                done=false; 
-                                break;
+                for (x, y) in knight_moves.iter() {
+                    let move_row = adjacent_white_piece/10 + x;
+                    let move_col = adjacent_white_piece%10 + y;
+
+                    // Check if the move is within the bounds of the board
+                    if move_row >= 0 && move_row < 8 && move_col >= 0 && move_col < 8 {
+                        let move_row = move_row as usize;
+                        let move_col = move_col as usize;
+
+                        if board.full_board[move_row][move_col].kind==Kind::Knight && board.full_board[move_row][move_col].team==Team::W{
+                            if let Some(pos) = updated_king_moves_black.iter().position(|x| *x == *location) {
+                                    updated_king_moves_black.remove(pos);
                             }
                         }
                     }
-                    if done && magnitude>0{
-                        if let Some(pos) = updated_king_moves_black.iter().position(|x| *x == *location) {
-                            updated_king_moves_black.remove(pos);
-                        }
-                    }
-                    }
-            }
-
-            
-            for (x, y) in knight_moves.iter() {
-            let move_row = l/10 + x;
-            let move_col = l%10 + y;
-
-            // Check if the move is within the bounds of the board
-            if move_row >= 0 && move_row < 8 && move_col >= 0 && move_col < 8 {
-                let move_row = move_row as usize;
-                let move_col = move_col as usize;
-                if board.full_board[move_row][move_col].kind==Kind::Knight && board.full_board[move_row][move_col].team==Team::W{
-                    if let Some(pos) = updated_king_moves_black.iter().position(|x| *x == *location) {
-                            updated_king_moves_black.remove(pos);
-                    }
                 }
             }
         }
-    }
-}
+        //end of if !white_turn
 
         let w_king_i=board.white_indexes.get_index(PieceId::K).unwrap();
         let w_king_r=w_king_i/10;
-        let w_king_c=w_king_i/10;
+        let w_king_c=w_king_i%10;
         if white_turn{
-        for i in white_moves.get_moves(PieceId::K){
+            for i in white_moves.get_moves(PieceId::K){
 
-        //same code but for white instead of black. 
-        if i%10<=6 && i/10<=6{
-            if board.full_board[i/10+1][i%10+1].kind==Kind::Pawn&& board.full_board[i/10+1][i%10+1].team==Team::B{
-                if let Some(pos) = updated_king_moves_white.iter().position(|x| *x == i) {
-                    updated_king_moves_white.remove(pos);
-                }
-            }
-        }
-        if i%10>=1 && i/10<=6{
-            if board.full_board[i/10+1][i%10-1].kind==Kind::Pawn && board.full_board[i/10+1][i%10-1].team==Team::B{
-                if let Some(pos) = updated_king_moves_white.iter().position(|x| *x == i) {
-                    updated_king_moves_white.remove(pos);
-                }
-            }
-        }
-        let b_king_location=board.black_indexes.get_index(PieceId::K).unwrap() as i32;
-        if ((i as i32)/10-b_king_location/10).abs()<=1 && ((i as i32)%10-b_king_location%10).abs()<=1{
-            if let Some(pos) = updated_king_moves_white.iter().position(|x| *x == i) {
-                updated_king_moves_white.remove(pos);
-            }
-        }
-        }
 
-        
-        for location in adjacent_to_white_k.iter(){
-        let l=*location as isize;
-        
-        for j in b_bishops.iter(){
-            let k=*j as isize;
-            if k==l{
-                continue;
-            }
-            let mut done=false;
-            if (k/10 as isize - w_king_r as isize).abs() != (k%10 - w_king_c as isize).abs(){//already handled in pinning functions
-               if (k/10 as isize - l/10 as isize).abs() == (k%10 as isize - l%10 as isize).abs(){
-                    let direction_r:isize = if k/10 > l/10 { 1 } else { -1 };
-                    let direction_c:isize= if k%10 > l%10 { 1 } else { -1 };
-                    let magnitude=(k/10 as isize - l/10 as isize).abs();
-                    for scalar_inc in 1..magnitude{
-                        let r_inc=l/10+(scalar_inc*direction_r);
-                        let c_inc=l%10+(scalar_inc*direction_c);
-                        if let Some(piece) = board
-                            .full_board
-                            .get((r_inc) as usize)
-                            .and_then(|row| row.get(c_inc as usize))
-                    {
-                        if piece.team!=Team::N{
-                            done=true; 
-                        }
-                    }
-               }
-               if done && magnitude>0{
-                if let Some(pos) = updated_king_moves_white.iter().position(|x| *x == *location) {
-                    updated_king_moves_white.remove(pos);
-                }
-               }
-            }
-        }
-        }
-
-        for i in b_rooks.iter(){
-            let k=*i as isize;
-            if k==l{
-                continue;
-            }
-            if l/10==k/10{
-                let magnitude=(l%10-k%10).abs();
-                let direction:isize = if k%10 > l%10 { 1 } else { -1 };
-                let mut done=true;
-
-                for scalar_inc in 1..magnitude{
-                    let c_inc=l%10+(scalar_inc*direction);
-                    if let Some(piece) = board
-                            .full_board
-                            .get((l/10) as usize)
-                            .and_then(|row| row.get((c_inc) as usize))
-                    {
-                        if piece.team!=Team::N{
-                            done=false; 
-                            break;
+            //same code but for white instead of black. 
+                if i%10<=6 && i/10>=1 &&i!=99 &&i!=100{
+                    if board.full_board[i/10-1][i%10+1].kind==Kind::Pawn && board.full_board[i/10-1][i%10+1].team==Team::B{
+                        if let Some(pos) = updated_king_moves_white.iter().position(|x| *x == i) {
+                            updated_king_moves_white.remove(pos);
                         }
                     }
                 }
-
-                if done && magnitude>0{
-                    if let Some(pos) = updated_king_moves_white.iter().position(|x| *x == *location) {
+                if i%10>=1 && i/10>=1 &&i!=99 &&i!=100{
+                    if board.full_board[i/10-1][i%10-1].kind==Kind::Pawn && board.full_board[i/10-1][i%10-1].team==Team::B{
+                        if let Some(pos) = updated_king_moves_white.iter().position(|x| *x == i) {
+                            updated_king_moves_white.remove(pos);
+                        }
+                    }
+                }
+                if i==99{
+                    if board.full_board[6][4].kind==Kind::Pawn && board.full_board[6][7].team==Team::B{
+                        if let Some(pos) = updated_king_moves_white.iter().position(|x| *x == i) {
+                            updated_king_moves_white.remove(pos);
+                        }
+                    }
+                }
+                if i==100{
+                    if board.full_board[6][0].kind==Kind::Pawn && board.full_board[6][4].team==Team::B{
+                        if let Some(pos) = updated_king_moves_white.iter().position(|x| *x == i) {
+                            updated_king_moves_white.remove(pos);
+                        }
+                    }
+                }
+                let b_king_location=board.black_indexes.get_index(PieceId::K).unwrap() as i32;
+                if ((i as i32)/10-b_king_location/10).abs()<=1 && ((i as i32)%10-b_king_location%10).abs()<=1{
+                    if let Some(pos) = updated_king_moves_white.iter().position(|x| *x == i) {
                         updated_king_moves_white.remove(pos);
                     }
                 }
             }
 
-            if l%10==k%10{
-                let magnitude=(l/10-k/10).abs();
-                let direction:isize = if k/10 > l/10 { 1 } else { -1 };
-                let mut done=true;
-                for scalar_inc in 1..magnitude{
-                    let r_inc=l/10+(scalar_inc*direction);
-                    if let Some(piece) = board
-                            .full_board
-                            .get(r_inc as usize)
-                            .and_then(|row| row.get((l%10) as usize))
-                    {
-                        if piece.team!=Team::N{
-                            done=false; 
-                            break;
+        
+            for location in adjacent_to_white_k.iter(){
+                let adjacent_black_piece=*location as isize;
+                
+                for j in b_bishops.iter(){
+                    let pressuring_black_bishop=*j as isize;
+                    if pressuring_black_bishop==adjacent_black_piece{
+                        continue;
+                    }
+                    let mut done=true;
+                    if (pressuring_black_bishop/10 as isize - adjacent_black_piece/10 as isize).abs() == (pressuring_black_bishop%10 as isize - adjacent_black_piece%10 as isize).abs(){
+                            let direction_r:isize = if pressuring_black_bishop/10 > adjacent_black_piece/10 { 1 } else { -1 };
+                            let direction_c:isize= if pressuring_black_bishop%10 > adjacent_black_piece%10 { 1 } else { -1 };
+                            let magnitude=(pressuring_black_bishop/10 as isize - adjacent_black_piece/10 as isize).abs();
+                            for scalar_inc in 1..magnitude{
+                                let r_inc=adjacent_black_piece/10+(scalar_inc*direction_r);
+                                let c_inc=adjacent_black_piece%10+(scalar_inc*direction_c);
+
+                                if let Some(piece) = board
+                                    .full_board
+                                    .get((r_inc) as usize)
+                                    .and_then(|row| row.get(c_inc as usize))
+                            {
+                                if piece.team!=Team::N{
+                                    done=false; 
+                                }
+                            }
+                    }
+                    if done && magnitude>0{
+                        if let Some(pos) = updated_king_moves_white.iter().position(|x| *x == *location) {
+                            updated_king_moves_white.remove(pos);
                         }
                     }
-                }
-                if done && magnitude>0{
-                    if let Some(pos) = updated_king_moves_white.iter().position(|x| *x == *location) {
-                        updated_king_moves_white.remove(pos);
                     }
+                
                 }
-                }
-        }
 
-        
-        for (x, y) in knight_moves.iter() {
-        let move_row = l/10 + x;
-        let move_col = l%10 + y;
-
-        // Check if the move is within the bounds of the board
-        if move_row >= 0 && move_row < 8 && move_col >= 0 && move_col < 8 {
-            let move_row = move_row as usize;
-            let move_col = move_col as usize;
-            if board.full_board[move_row][move_col].kind==Kind::Knight && board.full_board[move_row][move_col].team==Team::B{
-                if let Some(pos) = updated_king_moves_white.iter().position(|x| *x == l as usize) {
-                    updated_king_moves_white.remove(pos);
+                for i in b_rooks.iter(){
+                    let pressuring_black_rook=*i as isize;
+                    if pressuring_black_rook==adjacent_black_piece{
+                        continue;
                     }
+                    if adjacent_black_piece/10==pressuring_black_rook/10{
+                        let magnitude=(adjacent_black_piece%10-pressuring_black_rook%10).abs();
+                        let direction:isize = if pressuring_black_rook%10 > adjacent_black_piece%10 { 1 } else { -1 };
+                        let mut done=true;
+
+                        for scalar_inc in 1..magnitude{
+                            let c_inc=adjacent_black_piece%10+(scalar_inc*direction);
+                            if let Some(piece) = board
+                                    .full_board
+                                    .get((adjacent_black_piece/10) as usize)
+                                    .and_then(|row| row.get((c_inc) as usize))
+                            {
+                                if piece.team!=Team::N{
+                                    done=false; 
+                                }
+                            }
+                        }
+
+                        if done && magnitude>0{
+                            if let Some(pos) = updated_king_moves_white.iter().position(|x| *x == *location) {
+                                updated_king_moves_white.remove(pos);
+                            }
+                        }
+                    }
+
+                    if adjacent_black_piece%10==pressuring_black_rook%10{
+                        let magnitude=(adjacent_black_piece/10-pressuring_black_rook/10).abs();
+                        let direction:isize = if pressuring_black_rook/10 > adjacent_black_piece/10 { 1 } else { -1 };
+                        let mut done=true;
+                        for scalar_inc in 1..magnitude{
+                            let r_inc=adjacent_black_piece/10+(scalar_inc*direction);
+                            if let Some(piece) = board
+                                    .full_board
+                                    .get(r_inc as usize)
+                                    .and_then(|row| row.get((adjacent_black_piece%10) as usize))
+                            {
+                                if piece.team!=Team::N{
+                                    done=false; 
+                                    break;
+                                }
+                            }
+                        }
+                        if done && magnitude>0{
+                            if let Some(pos) = updated_king_moves_white.iter().position(|x| *x == *location) {
+                                updated_king_moves_white.remove(pos);
+                            }
+                        }
+                        }
+                }
+
+                
+                for (x, y) in knight_moves.iter() {
+                    let move_row = adjacent_black_piece/10 + x;
+                    let move_col = adjacent_black_piece%10 + y;
+
+                    // Check if the move is within the bounds of the board
+                    if move_row >= 0 && move_row < 8 && move_col >= 0 && move_col < 8 {
+                        let move_row = move_row as usize;
+                        let move_col = move_col as usize;
+                        if board.full_board[move_row][move_col].kind==Kind::Knight && board.full_board[move_row][move_col].team==Team::B{
+                            if let Some(pos) = updated_king_moves_white.iter().position(|x| *x == adjacent_black_piece as usize) {
+                                updated_king_moves_white.remove(pos);
+                                }
+                            }
+                        }
                 }
             }
         }
+    black_moves.insert_moves(PieceId::K, &updated_king_moves_black);
+    white_moves.insert_moves(PieceId::K, &updated_king_moves_white);
+    if white_turn{
+        return AllMovesGenRe {moves:white_moves, checking:re_checking};
     }
-}
-black_moves.insert_moves(PieceId::K, &updated_king_moves_black);
-white_moves.insert_moves(PieceId::K, &updated_king_moves_white);
-if white_turn{
-    return AllMovesGenRe {moves:white_moves, checking:re_checking};
-}
-else{
-    return AllMovesGenRe {moves:black_moves, checking:re_checking};
-}
+    else{
+        return AllMovesGenRe {moves:black_moves, checking:re_checking};
+    }
 }
 //end of all_moves_gen
     
@@ -595,6 +637,7 @@ else{
 
 
 pub fn move_piece(mut board:Board, move_piece:PieceId, mut indexes:usize)->Board{
+    board.moves_log.push(Move{piece:move_piece, location:indexes});
     //takes a piece id and index and updates the board struct. 
     if board.turn%2==0{
         let pawn_premotion_queen=indexes/10!=8; 
@@ -681,6 +724,12 @@ pub fn move_piece(mut board:Board, move_piece:PieceId, mut indexes:usize)->Board
 
         if capturing{
             let b_old_piece=board.black_i_to_p.get_piece(new_indexes).unwrap();
+            if b_old_piece==PieceId::R1 && board.prime2%7!=0{//can't castle if the rook is gone!!!
+                board.prime2=board.prime2*7;
+            }
+            if b_old_piece==PieceId::R2 && board.prime2%11!=0{
+                board.prime2=board.prime2*11;
+            }
             board.black_piece_ids.remove(board.black_piece_ids.iter().position(|x| *x == b_old_piece).unwrap());
             board.black_indexes.nullify(b_old_piece);
             board.black_i_to_p.nullify(new_indexes);
@@ -806,6 +855,12 @@ pub fn move_piece(mut board:Board, move_piece:PieceId, mut indexes:usize)->Board
 
         if capturing{
             let w_old_piece=board.white_i_to_p.get_piece(new_indexes).unwrap();
+            if w_old_piece==PieceId::R1 && board.prime2%2!=0{
+                board.prime2=board.prime2*2;
+            }
+            if w_old_piece==PieceId::R2 && board.prime2%3!=0{
+                board.prime2=board.prime2*3;
+            }
             board.white_piece_ids.remove(board.white_piece_ids.iter().position(|x| *x == w_old_piece).unwrap());
             board.white_indexes.nullify(w_old_piece);
             board.white_i_to_p.nullify(new_indexes);

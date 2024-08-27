@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 use serde::{Deserialize, Serialize};
-
+use crate::mongo_repo::{MongoBoard};
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Kind {
     Pawn,
@@ -25,6 +25,262 @@ impl Kind { //this is just for testing.
         }
     }
 }
+
+// pub enum Sygyzy {
+//     Na,
+//     KBBBvK,
+//     KBBNvK,
+//     KBBPvK,
+//     KBBvK,
+//     KBBvKB,
+//     KBBvKN,
+//     KBBvKP,
+//     KBBvKQ,
+//     KBBvKR,
+//     KBNNvK,
+//     KBNPvK,
+//     KBNvK,
+//     KBNvKB,
+//     KBNvKN,
+//     KBNvKP,
+//     KBNvKQ,
+//     KBNvKR,
+//     KBPPvK,
+//     KBPvK,
+//     KBPvKB,
+//     KBPvKN,
+//     KBPvKP,
+//     KBPvKQ,
+//     KBPvKR,
+//     KBvK,
+//     KBvKB,
+//     KBvKN,
+//     KBvKP,
+//     KNNNvK,
+//     KNNPvK,
+//     KNNvK,
+//     KNNvKB,
+//     KNNvKN,
+//     KNNvKP,
+//     KNNvKQ,
+//     KNNvKR,
+//     KNPPvK,
+//     KNPvK,
+//     KNPvKB,
+//     KNPvKN,
+//     KNPvKP,
+//     KNPvKQ,
+//     KNPvKR,
+//     KNvK,
+//     KNvKB,
+//     KNvKN,
+//     KNvKP,
+//     KPvK,
+//     KPvKB,
+//     KPvKN,
+//     KPvKP,
+//     KQBBvK,
+//     KQBNvK,
+//     KQBPvK,
+//     KQBvK,
+//     KQBvKB,
+//     KQBvKN,
+//     KQBvKP,
+//     KQBvKQ,
+//     KQBvKR,
+//     KQNNvK,
+//     KQNPvK,
+//     KQNvK,
+//     KQNvKB,
+//     KQNvKN,
+//     KQNvKP,
+//     KQNvKQ,
+//     KQNvKR,
+//     KQPPvK,
+//     KQPvK,
+//     KQPvKB,
+//     KQPvKN,
+//     KQPvKP,
+//     KQPvKQ,
+//     KQPvKR,
+//     KQQvK,
+//     KQQvKB,
+//     KQQvKN,
+//     KQQvKP,
+//     KQQvKQ,
+//     KQQvKR,
+//     KQRBvK,
+//     KQRNvK,
+//     KQRPvK,
+//     KQRvK,
+//     KQRvKB,
+//     KQRvKN,
+//     KQRvKP,
+//     KQRvKQ,
+//     KQRvKR,
+//     KRBBvK,
+//     KRBNvK,
+//     KRBPvK,
+//     KRBvK,
+//     KRBvKB,
+//     KRBvKN,
+//     KRBvKP,
+//     KRBvKQ,
+//     KRBvKR,
+//     KRNNvK,
+//     KRNPvK,
+//     KRNvK,
+//     KRNvKB,
+//     KRNvKN,
+//     KRNvKP,
+//     KRNvKQ,
+//     KRNvKR,
+//     KRPPvK,
+//     KRPvK,
+//     KRPvKB,
+//     KRPvKN,
+//     KRPvKP,
+//     KRPvKQ,
+//     KRPvKR,
+//     KRRRvK,
+//     KRRvK,
+//     KRRvKB,
+//     KRRvKN,
+//     KRRvKP,
+//     KRRvKQ,
+//     KRRvKR,
+// }
+
+// impl Syzygy {
+//     pub fn to_string(&self) -> &str {
+//         match self {
+//             Syzygy::Na => "Na",
+//             Syzygy::KBBBvK => "KBBBvK",
+//             Syzygy::KBBNvK => "KBBNvK",
+//             Syzygy::KBBPvK => "KBBPvK",
+//             Syzygy::KBBvK => "KBBvK",
+//             Syzygy::KBBvKB => "KBBvKB",
+//             Syzygy::KBBvKN => "KBBvKN",
+//             Syzygy::KBBvKP => "KBBvKP",
+//             Syzygy::KBBvKQ => "KBBvKQ",
+//             Syzygy::KBBvKR => "KBBvKR",
+//             Syzygy::KBNNvK => "KBNNvK",
+//             Syzygy::KBNPvK => "KBNPvK",
+//             Syzygy::KBNvK => "KBNvK",
+//             Syzygy::KBNvKB => "KBNvKB",
+//             Syzygy::KBNvKN => "KBNvKN",
+//             Syzygy::KBNvKP => "KBNvKP",
+//             Syzygy::KBNvKQ => "KBNvKQ",
+//             Syzygy::KBNvKR => "KBNvKR",
+//             Syzygy::KBPPvK => "KBPPvK",
+//             Syzygy::KBPvK => "KBPvK",
+//             Syzygy::KBPvKB => "KBPvKB",
+//             Syzygy::KBPvKN => "KBPvKN",
+//             Syzygy::KBPvKP => "KBPvKP",
+//             Syzygy::KBPvKQ => "KBPvKQ",
+//             Syzygy::KBPvKR => "KBPvKR",
+//             Syzygy::KBvK => "KBvK",
+//             Syzygy::KBvKB => "KBvKB",
+//             Syzygy::KBvKN => "KBvKN",
+//             Syzygy::KBvKP => "KBvKP",
+//             Syzygy::KNNNvK => "KNNNvK",
+//             Syzygy::KNNPvK => "KNNPvK",
+//             Syzygy::KNNvK => "KNNvK",
+//             Syzygy::KNNvKB => "KNNvKB",
+//             Syzygy::KNNvKN => "KNNvKN",
+//             Syzygy::KNNvKP => "KNNvKP",
+//             Syzygy::KNNvKQ => "KNNvKQ",
+//             Syzygy::KNPPvK => "KNPPvK",
+//             Syzygy::KNPvK => "KNPvK",
+//             Syzygy::KNPvKB => "KNPvKB",
+//             Syzygy::KNPvKN => "KNPvKN",
+//             Syzygy::KNPvKP => "KNPvKP",
+//             Syzygy::KNPvKQ => "KNPvKQ",
+//             Syzygy::KNPvKR => "KNPvKR",
+//             Syzygy::KNvK => "KNvK",
+//             Syzygy::KNvKB => "KNvKB",
+//             Syzygy::KNvKN => "KNvKN",
+//             Syzygy::KNvKP => "KNvKP",
+//             Syzygy::KPvK => "KPvK",
+//             Syzygy::KPvKB => "KPvKB",
+//             Syzygy::KPvKN => "KPvKN",
+//             Syzygy::KPvKP => "KPvKP",
+//             Syzygy::KQBBvK => "KQBBvK",
+//             Syzygy::KQBNvK => "KQBNvK",
+//             Syzygy::KQBPvK => "KQBPvK",
+//             Syzygy::KQBvK => "KQBvK",
+//             Syzygy::KQBvKB => "KQBvKB",
+//             Syzygy::KQBvKN => "KQBvKN",
+//             Syzygy::KQBvKP => "KQBvKP",
+//             Syzygy::KQBvKQ => "KQBvKQ",
+//             Syzygy::KQBvKR => "KQBvKR",
+//             Syzygy::KQNNvK => "KQNNvK",
+//             Syzygy::KQNPvK => "KQNPvK",
+//             Syzygy::KQNvK => "KQNvK",
+//             Syzygy::KQNvKB => "KQNvKB",
+//             Syzygy::KQNvKN => "KQNvKN",
+//             Syzygy::KQNvKP => "KQNvKP",
+//             Syzygy::KQNvKQ => "KQNvKQ",
+//             Syzygy::KQNvKR => "KQNvKR",
+//             Syzygy::KQPPvK => "KQPPvK",
+//             Syzygy::KQPvK => "KQPvK",
+//             Syzygy::KQPvKB => "KQPvKB",
+//             Syzygy::KQPvKN => "KQPvKN",
+//             Syzygy::KQPvKP => "KQPvKP",
+//             Syzygy::KQPvKQ => "KQPvKQ",
+//             Syzygy::KQPvKR => "KQPvKR",
+//             Syzygy::KQQvK => "KQQvK",
+//             Syzygy::KQQvKB => "KQQvKB",
+//             Syzygy::KQQvKN => "KQQvKN",
+//             Syzygy::KQQvKP => "KQQvKP",
+//             Syzygy::KQQvKQ => "KQQvKQ",
+//             Syzygy::KQQvKR => "KQQvKR",
+//             Syzygy::KQRBvK => "KQRBvK",
+//             Syzygy::KQRNvK => "KQRNvK",
+//             Syzygy::KQRPvK => "KQRPvK",
+//             Syzygy::KQRvK => "KQRvK",
+//             Syzygy::KQRvKB => "KQRvKB",
+//             Syzygy::KQRvKN => "KQRvKN",
+//             Syzygy::KQRvKP => "KQRvKP",
+//             Syzygy::KQRvKQ => "KQRvKQ",
+//             Syzygy::KQRvKR => "KQRvKR",
+//             Syzygy::KRBBvK => "KRBBvK",
+//             Syzygy::KRBNvK => "KRBNvK",
+//             Syzygy::KRBPvK => "KRBPvK",
+//             Syzygy::KRBvK => "KRBvK",
+//             Syzygy::KRBvKB => "KRBvKB",
+//             Syzygy::KRBvKN => "KRBvKN",
+//             Syzygy::KRBvKP => "KRBvKP",
+//             Syzygy::KRBvKQ => "KRBvKQ",
+//             Syzygy::KRBvKR => "KRBvKR",
+//             Syzygy::KRNNvK => "KRNNvK",
+//             Syzygy::KRNPvK => "KRNPvK",
+//             Syzygy::KRNvK => "KRNvK",
+//             Syzygy::KRNvKB => "KRNvKB",
+//             Syzygy::KRNvKN => "KRNvKN",
+//             Syzygy::KRNvKP => "KRNvKP",
+//             Syzygy::KRNvKQ => "KRNvKQ",
+//             Syzygy::KRNvKR => "KRNvKR",
+//             Syzygy::KRPPvK => "KRPPvK",
+//             Syzygy::KRPvK => "KRPvK",
+//             Syzygy::KRPvKB => "KRPvKB",
+//             Syzygy::KRPvKN => "KRPvKN",
+//             Syzygy::KRPvKP => "KRPvKP",
+//             Syzygy::KRPvKQ => "KRPvKQ",
+//             Syzygy::KRPvKR => "KRPvKR",
+//             Syzygy::KRRRvK => "KRRRvK",
+//             Syzygy::KRRvK => "KRRvK",
+//             Syzygy::KRRvKB => "KRRvKB",
+//             Syzygy::KRRvKN => "KRRvKN",
+//             Syzygy::KRRvKP => "KRRvKP",
+//             Syzygy::KRRvKQ => "KRRvKQ",
+//             Syzygy::KRRvKR => "KRRvKR",
+//         }
+//     }
+// }
+
+
+
 
 
 #[derive(Clone, Debug, Copy, PartialEq, Serialize, Deserialize)]
@@ -140,6 +396,12 @@ pub struct Move {//parameters for the move_piece function.
     pub piece: PieceId,
     pub location: usize,
 }
+impl Move{
+    pub fn to_string(&self) -> String {
+        let re = format!("piece:{} location:{}", self.piece.to_string(), self.location);
+        re
+    }
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct IndexMap {//this stores every unique PieceId to its location on the board. 
@@ -147,6 +409,27 @@ pub struct IndexMap {//this stores every unique PieceId to its location on the b
     //indexes can range from 0 (A8) to 77 (H1), /10 for row %10 for column
     //NOTE: pieceids that are captured or do not exist yet (pawn promotions) should NEVER be looked up here
     hash: Vec<Option<usize>>,
+}
+#[derive(Copy, Clone)]
+pub enum NeuralNetworkSelector{
+    Model1,
+    Model2,
+    Model3,
+    Model4,
+    Model5,
+    Model6,
+}
+impl NeuralNetworkSelector{
+    pub fn to_string(&self)->&str{
+        match self{
+            NeuralNetworkSelector::Model1=>"src/model1.pt",
+            NeuralNetworkSelector::Model2=>"src/model2.pt",
+            NeuralNetworkSelector::Model3=>"src/model3_scripted.pt",
+            NeuralNetworkSelector::Model4=>"src/model4_scripted.pt",
+            NeuralNetworkSelector::Model5=>"src/model5_scripted.pt",
+            NeuralNetworkSelector::Model6=>"src/model6_scripted.pt",
+        }
+    }
 }
 impl IndexMap {
     pub fn new() -> Self {
@@ -200,11 +483,8 @@ impl AvailableMovesMap {
 pub struct TreeNode{
     pub level:i32,
     pub game:Board,
-    pub parent:Option<TreeNodeRef>,
-    pub children:Vec<TreeNodeRef>,
+    pub children:Vec<TreeNode>,
 }
-
-pub type TreeNodeRef = Rc<RefCell<TreeNode>>; //RefCell<T> and Cell<T> is a type that allows for interior mutability,
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct IToPMap {
@@ -309,11 +589,31 @@ pub struct RenderPiece {
 }
 
 pub struct ServerProcessingRe {
-    pub b:Board, 
+    pub b:MongoBoard, 
     pub pgn:String,
 }
 
 pub struct AIMoveRe{
     pub m:Move,
     pub b:Board,
+}
+
+pub struct GameStateIdentifiers{
+    pub stalemate:f32,
+    pub ai_checkmate:f32,
+    pub player_checkmate:f32,
+    pub in_play:f32,
+    pub new_game=f32,
+}
+
+impl GameStateIdentifiers {
+    pub fn new() -> Self {
+        GameStateIdentifiers{
+            in_play:f32::PI,
+            new_game:1/f32::MAX,
+            stalemate:0.0,
+            ai_checkmate:f32::MAX,
+            player_checkmate:-f32::MAX,
+        }
+    }
 }

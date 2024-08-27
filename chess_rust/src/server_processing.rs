@@ -1,11 +1,16 @@
 use crate::test_board::{split_string_to_chars, reverse_mapping_2, reverse_row_mapping, reverse_col_mapping, map_standard_format_to_kind };
-use crate::types::{Board,Move, Kind,PieceId,AllMovesGenRe,Team, ServerProcessingRe, TreeNode, TreeNodeRef,MoveAdvMap,AIMoveRe};
+use crate::types::{Board,Move, GameStateIdentifiers, Kind,PieceId,AllMovesGenRe,Team, ServerProcessingRe, TreeNode,MoveAdvMap,AIMoveRe};
 use crate::base_functions::{contains_element, map_piece_id_to_kind, init_board};
 use crate::upper_move_functions::{all_moves_gen, move_piece};
-use crate::mongo_repo::{MongoRepo};
+use crate::mongo_repo::{MongoRepo, MongoBoard};
 use std::{cell::RefCell, rc::Rc};
 use crate::search_functions::{generate_top_moves, search};
 use crate::ai_functions::{game_still_going};
+use serde_json::Value;
+use std::fs;
+use std::collections::HashMap;
+use tch::{nn, nn::VarStore, Device, Tensor};
+
 
 pub fn row_mapping(n: usize) -> &'static str {
     match n {
@@ -354,45 +359,70 @@ fn combine_strings(strings: Vec<&str>) -> String {
     result
 }
 
-pub fn process_server_response(pgn:String, last_game:Option<Board>)->ServerProcessingRe{
+pub fn process_server_response(pgn:String, last_game:Option<MongoBoard>)->ServerProcessingRe{
     let address_pgn:&str=pgn.as_str();
     if last_game.is_none() {
 
         if pgn.len()==0{
-            //if 0
+            //if white start always move e4
             let initial_board=init_board(true);
-            let moves=all_moves_gen(&initial_board);
-            let moved=ai_move(initial_board.clone());
-            let pgn2=hash_to_pgn(&initial_board, moved.m.piece, moved.m.location,&moves);
-            return ServerProcessingRe{b:moved.b, pgn:pgn2};
+            let pgn2="e4";
+            let moved2=move_piece(initial_board, PieceId::P5, 44);
+            return ServerProcessingRe{b:MongoBoard{board:moved2, pgn:pgn2.to_string()}, pgn:pgn2.to_string()};
         }
 
         else{
+            //black start
             let initial_board=init_board(true);
             let moves=all_moves_gen(&initial_board);
             let hash=pgn_to_hash(&initial_board, address_pgn, &moves);
             let turn_2=move_piece(initial_board, hash.piece, hash.location);
-            let moved=ai_move(turn_2.clone());
+            let moved=ai_move(turn_2.clone(), address_pgn).unwrap();
+            let moved2=move_piece(moved.b, moved.m.piece, moved.m.location);
             let pgn2=hash_to_pgn(&turn_2, moved.m.piece, moved.m.location,&moves);
-            return ServerProcessingRe{b:moved.b, pgn:pgn2};
+            let pgn3=format!("{}{}", pgn, pgn2);
+            return ServerProcessingRe{b:MongoBoard{board:moved2,pgn:pgn3}, pgn:pgn2};
         }
     }
     
     else{
+        //past turn 2
         let last_game=last_game.unwrap();
-        let moves=all_moves_gen(&last_game);
-        let hash=pgn_to_hash(&last_game,address_pgn,&moves);
-        let turn_2=move_piece(last_game, hash.piece, hash.location);
-        let moved=ai_move(turn_2.clone());
+        let moves=all_moves_gen(&last_game.board);
+        let hash=pgn_to_hash(&last_game.board,address_pgn,&moves);
+        let turn_2=move_piece(last_game.board.clone(), hash.piece, hash.location);
+        let ai_move_param_pgn=last_game.pgn;
+        let moved=ai_move(turn_2.clone(), &ai_move_param_pgn).unwrap();
+        let moved2=move_piece(moved.b.clone(), moved.m.piece, moved.m.location);
         let pgn2=hash_to_pgn(&turn_2, moved.m.piece, moved.m.location,&moves);
-        return ServerProcessingRe{b:moved.b, pgn:pgn2};
+        let pgn3=format!("{}{}", pgn, pgn2);
+        let pgn4=format!("{}{}", ai_move_param_pgn, pgn3);
+        return ServerProcessingRe{b:MongoBoard{board:moved2,pgn:pgn4}, pgn:pgn2};
     }
 }
 
-fn ai_move(b:Board)->AIMoveRe{
+fn ai_move(b:Board, pgn:&str)->Option<AIMoveRe>{
+    if b.turn<10{
+    let b2=b.clone();
+    // Load the JSON file into a string
+    let data = fs::read_to_string("opening_book.json")
+        .expect("Unable to read file");
+    // Parse the JSON string into a HashMap for efficient key-value access
+    let book: HashMap<String, String> = serde_json::from_str(&data)
+        .expect("JSON was not well-formatted");
+    if let Some(move_value) = book.get(pgn) {
+        //if something is returned from the opening book
+        let param_moves=all_moves_gen(&b);
+        let re_move:Move=pgn_to_hash(&b, move_value, &param_moves);
+        let moved_board=move_piece(b2,re_move.piece, re_move.location);
+        return Some(AIMoveRe{b:moved_board,m:re_move});
+    }
+    }
+    let game_states=GameStateIdentifiers::new();
+
     let av_moves=all_moves_gen(&b);
-    if game_still_going(&b, av_moves.checking, &av_moves.moves)!=0.0{
-        return AIMoveRe{m:Move {piece:PieceId::Error, location:10000}, b:b.clone()};// end the game here.
+    if game_still_going(&b, av_moves.checking, &av_moves.moves)!=game_states.in_play{
+        return Some(AIMoveRe{m:Move {piece:PieceId::Error, location:10000}, b:b.clone()}) ;// end the game here.
     }
     let mut the_move:Move=Move {piece:PieceId::Error, location:10000};
     let mut re:AIMoveRe=AIMoveRe{b:b.clone(),m:the_move};
@@ -401,8 +431,8 @@ fn ai_move(b:Board)->AIMoveRe{
         for i in b.white_piece_ids.iter(){
             for j in av_moves.moves.get_moves(*i).iter(){
                 let searching_b=move_piece(b.clone(), *i,*j);
-                let searching_treenode=TreeNode {game:searching_b.clone(), level:0, parent:None, children:vec![]};
-                let new_mm=search(&Rc::new(RefCell::new(searching_treenode)), 5, 5, biggest_mm, 1.0);//will tweak depth and width params
+                let searching_treenode=TreeNode {game:searching_b.clone(), level:0, children:vec![]};
+                let new_mm=search(searching_treenode, 5, 5, biggest_mm, 1.0);//will tweak depth and width params
                 if new_mm>biggest_mm{
                     biggest_mm=new_mm;
                     the_move=Move {piece:*i, location:*j};
@@ -410,15 +440,15 @@ fn ai_move(b:Board)->AIMoveRe{
                 }
             }
         }
-        return re;
+        return Some(re);
     }
     else{
         let mut biggest_mm:f32=0.0;
         for i in b.black_piece_ids.iter(){
             for j in av_moves.moves.get_moves(*i).iter(){
                 let searching_b=move_piece(b.clone(), *i,*j);
-                let searching_treenode=TreeNode {game:searching_b.clone(), level:0, parent:None, children:vec![]};
-                let new_mm=search(&Rc::new(RefCell::new(searching_treenode)), 5, 5, biggest_mm, 1.0);
+                let searching_treenode=TreeNode {game:searching_b.clone(), level:0, children:vec![]};
+                let new_mm=search(searching_treenode, 5, 5, biggest_mm, 1.0);
                 if biggest_mm<new_mm{
                     biggest_mm=new_mm;
                     the_move=Move {piece:*i, location:*j};
@@ -426,7 +456,6 @@ fn ai_move(b:Board)->AIMoveRe{
                 }
             }
         }
-        return re;
+        return Some(re);
     }
-}
- 
+    }
