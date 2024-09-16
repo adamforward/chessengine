@@ -11,148 +11,7 @@ use std::path::Path;
 
 
 
-fn build_chess_cnn_3(vs: &nn::Path) -> nn::Sequential {
-    nn::seq()
-        .add(nn::conv2d(vs, 6, 32, 4, nn::ConvConfig { padding: 0, ..Default::default() }))
-        .add_fn(|xs| xs.relu())
-        .add(nn::conv2d(vs, 32, 32, 3, nn::ConvConfig { padding: 1, ..Default::default() }))
-        .add_fn(|xs| xs.relu())
-        .add_fn(|xs| xs.avg_pool2d(&[2, 2], &[2, 2], &[0, 0], false, false, None))
-        .add(nn::conv2d(vs, 32, 64, 3, nn::ConvConfig { padding: 1, ..Default::default() }))
-        .add_fn(|xs| xs.relu())
-        .add(nn::conv2d(vs, 64, 64, 3, nn::ConvConfig { padding: 1, ..Default::default() }))
-        .add_fn(|xs| xs.relu())
-        .add_fn(|xs| xs.max_pool2d(&[2, 2], &[2, 2], &[0, 0], &[1, 1], false))  // dilation: [1, 1], ceil_mode: false
-        .add_fn(|xs| xs.view([-1, 64 * 1 * 1]))  // Flatten the tensor
-        .add(nn::linear(vs, 64 * 1 * 1, 128, Default::default()))
-        .add_fn(|xs| xs.relu())
-        .add_fn(|xs| xs.dropout(0.5, false))
-        .add(nn::linear(vs, 128, 64, Default::default()))
-        .add_fn(|xs| xs.relu())
-        .add_fn(|xs| xs.dropout(0.5, false))
-        .add(nn::linear(vs, 64, 1, Default::default()))
-        .add_fn(|xs| xs.sigmoid())
-}
 
-
-fn build_chess_cnn_2(vs: &nn::Path) -> nn::Sequential {
-    nn::seq()
-        .add(nn::conv2d(vs, 6, 32, 4, nn::ConvConfig { padding: 0, ..Default::default() }))
-        .add_fn(|xs| xs.relu())
-        .add(nn::conv2d(vs, 32, 32, 3, nn::ConvConfig { padding: 1, ..Default::default() }))
-        .add_fn(|xs| xs.relu())
-        .add_fn(|xs| xs.avg_pool2d(&[2, 2], &[2, 2], &[0, 0], false, false, None))  // Corresponds to Python's AvgPool2d
-        .add(nn::conv2d(vs, 32, 64, 3, nn::ConvConfig { padding: 1, ..Default::default() }))
-        .add_fn(|xs| xs.relu())
-        .add(nn::conv2d(vs, 64, 64, 3, nn::ConvConfig { padding: 1, ..Default::default() }))
-        .add_fn(|xs| xs.relu())
-        .add_fn(|xs| xs.max_pool2d(&[2, 2], &[2, 2], &[0, 0], &[1, 1], false)) // Corresponds to Python's MaxPool2d
-        .add_fn(|xs| xs.view([-1, 64 * 1 * 1]))  // Flatten the tensor
-        .add(nn::linear(vs, 64 * 1 * 1, 128, Default::default()))
-        .add_fn(|xs| xs.relu())
-        .add_fn(|xs| xs.dropout(0.5, false)) // Corresponds to Python's Dropout
-        .add(nn::linear(vs, 128, 64, Default::default()))
-        .add_fn(|xs| xs.relu())
-        .add_fn(|xs| xs.dropout(0.5, false)) // Corresponds to Python's Dropout
-        .add(nn::linear(vs, 64, 1, Default::default()))
-        .add_fn(|xs| xs.sigmoid())  // Corresponds to Python's Sigmoid
-}
-
-
-fn build_chess_cnn_4(vs: &nn::Path) -> nn::Sequential {
-    nn::seq()
-        .add(nn::conv2d(vs, 6, 32, 3, nn::ConvConfig { padding: 1, ..Default::default() }))
-        .add_fn(|xs| xs.relu())
-        .add(nn::conv2d(vs, 32, 32, 3, nn::ConvConfig { padding: 1, ..Default::default() }))
-        .add_fn(|xs| xs.relu())
-        .add_fn(|xs| xs.avg_pool2d(&[2, 2], &[2, 2], &[0, 0], false, false, None)) // Updated avg_pool2d call
-        .add(nn::conv2d(vs, 32, 64, 3, nn::ConvConfig { padding: 1, ..Default::default() }))
-        .add_fn(|xs| xs.relu())
-        .add_fn(|xs| xs.max_pool2d(&[2, 2], &[2, 2], &[0, 0], &[1, 1], false)) // Updated max_pool2d call
-        .add_fn(|xs| xs.view([-1, 64 * 2 * 2])) // Flatten the tensor
-        .add(nn::linear(vs, 64 * 2 * 2, 128, Default::default()))
-        .add_fn(|xs| xs.relu())
-        .add_fn(|xs| xs.dropout(0.5, false)) // Updated dropout call
-        .add(nn::linear(vs, 128, 64, Default::default()))
-        .add_fn(|xs| xs.relu())
-        .add_fn(|xs| xs.dropout(0.5, false)) // Updated dropout call
-        .add(nn::linear(vs, 64, 1, Default::default()))
-        .add_fn(|xs| xs.sigmoid())
-}
-
-fn build_chess_cnn_6(vs: &nn::Path) -> nn::Sequential {
-    nn::seq()
-        .add(nn::conv2d(vs, 6, 32, 3, nn::ConvConfig { padding: 1, ..Default::default() }))
-        .add_fn(|xs| xs.relu())
-        .add(nn::conv2d(vs, 32, 64, 3, nn::ConvConfig { padding: 1, ..Default::default() }))
-        .add_fn(|xs| xs.relu())
-        .add(nn::conv2d(vs, 64, 128, 3, nn::ConvConfig { padding: 1, ..Default::default() }))
-        .add_fn(|xs| xs.relu())
-        .add_fn(|xs| xs.max_pool2d(&[2, 2], &[2, 2], &[0, 0], &[1, 1], false)) // Updated max_pool2d call
-        .add(nn::conv2d(vs, 128, 128, 3, nn::ConvConfig { padding: 1, ..Default::default() }))
-        .add_fn(|xs| xs.relu())
-        .add(nn::conv2d(vs, 128, 256, 3, nn::ConvConfig { padding: 1, ..Default::default() }))
-        .add_fn(|xs| xs.relu())
-        .add_fn(|xs| xs.max_pool2d(&[2, 2], &[2, 2], &[0, 0], &[1, 1], false)) // Updated max_pool2d call
-        .add_fn(|xs| xs.view([-1, 256 * 2 * 2]))  // Flatten the tensor
-        .add(nn::linear(vs, 256 * 2 * 2, 128, Default::default()))
-        .add_fn(|xs| xs.relu())
-        .add_fn(|xs| xs.dropout(0.5, false)) // Updated dropout call
-        .add(nn::linear(vs, 128, 64, Default::default()))
-        .add_fn(|xs| xs.relu())
-        .add_fn(|xs| xs.dropout(0.5, false)) // Updated dropout call
-        .add(nn::linear(vs, 64, 1, Default::default()))
-        .add_fn(|xs| xs.sigmoid())
-}
-
-fn build_chess_cnn_5(vs: &nn::Path) -> nn::Sequential {
-    nn::seq()
-        .add(nn::conv2d(vs, 6, 32, 3, nn::ConvConfig { padding: 1, ..Default::default() }))
-        .add_fn(|xs| xs.relu())
-        .add(nn::conv2d(vs, 32, 32, 3, nn::ConvConfig { padding: 1, ..Default::default() }))
-        .add_fn(|xs| xs.relu())
-        .add_fn(|xs| xs.avg_pool2d(&[2, 2], &[2, 2], &[0, 0], false, false, None))  // Corresponds to Python's AvgPool2d
-        .add(nn::conv2d(vs, 32, 64, 3, nn::ConvConfig { padding: 1, ..Default::default() }))
-        .add_fn(|xs| xs.relu())
-        .add(nn::conv2d(vs, 64, 64, 3, nn::ConvConfig { padding: 1, ..Default::default() }))
-        .add_fn(|xs| xs.relu())
-        .add_fn(|xs| xs.max_pool2d(&[2, 2], &[2, 2], &[0, 0], &[1, 1], false)) // Corresponds to Python's MaxPool2d
-        .add_fn(|xs| xs.view([-1, 64 * 2 * 2]))  // Flatten the tensor
-        .add(nn::linear(vs, 64 * 2 * 2, 128, Default::default()))
-        .add_fn(|xs| xs.relu())
-        .add_fn(|xs| xs.dropout(0.5, false)) // Corresponds to Python's Dropout
-        .add(nn::linear(vs, 128, 64, Default::default()))
-        .add_fn(|xs| xs.relu())
-        .add_fn(|xs| xs.dropout(0.5, false)) // Corresponds to Python's Dropout
-        .add(nn::linear(vs, 64, 1, Default::default()))
-        .add_fn(|xs| xs.sigmoid())  // Corresponds to Python's Sigmoid
-}
-
-
-// fn get_nn_build(model: NeuralNetworkSelector, vs: &mut nn::VarStore) -> nn::Sequential {
-//     // Build the model based on the selector
-//     let sequential_model = match model {
-//         NeuralNetworkSelector::Model2 => build_chess_cnn_2(&vs.root()),
-//         NeuralNetworkSelector::Model3 => build_chess_cnn_3(&vs.root()),
-//         NeuralNetworkSelector::Model4 => build_chess_cnn_4(&vs.root()),
-//         NeuralNetworkSelector::Model5 => build_chess_cnn_5(&vs.root()),
-//         NeuralNetworkSelector::Model6 => build_chess_cnn_6(&vs.root()),
-//         _ => build_chess_cnn_2(&vs.root()), // Default case
-//     };
-
-//     // Load the pre-trained weights from the file path provided by NeuralNetworkSelector
-//     let model_file_path = model.to_string();
-//     if Path::new(&model_file_path).exists() {
-//         match vs.load(&model_file_path) {
-//             Ok(_) => println!("Successfully loaded pre-trained model from {}", model_file_path),
-//             Err(e) => eprintln!("Failed to load the model: {:?}", e),
-//         }
-//     } else {
-//         eprintln!("Model file does not exist at path: {}", model_file_path);
-//     }
-
-//     sequential_model
-// }
 
 fn get_nn_build(model_path: &str) -> Result<CModule, Box<dyn std::error::Error>> {
     let model = CModule::load(model_path)?;
@@ -163,7 +22,7 @@ fn get_nn_build(model_path: &str) -> Result<CModule, Box<dyn std::error::Error>>
 pub fn game_still_going(board: &Board, checking: bool, av_moves:&AvailableMovesMap) -> f32 {
     //neural network does not flag if the game is over or not, it just uses image recognition to calculate a winning probability
     //so this is needed for a deterministic is game still going. 
-    game_states=GameStateIdentifiers::new();
+    let game_states=GameStateIdentifiers::new();
     if board.turn % 2 == 0{
         let mut no_moves = true; // 0 for in play, 1 for checkmate, 2 for stalemate
         for &i in board.white_piece_ids.iter() {
@@ -176,7 +35,7 @@ pub fn game_still_going(board: &Board, checking: bool, av_moves:&AvailableMovesM
             if !checking {
                 return 0.0; // stalemate
             } else {
-                if board.ai_team{
+                if board.ai_team_is_white{
                     return game_states.ai_checkmate; // ai wins
                 }
                 else{
@@ -197,7 +56,7 @@ pub fn game_still_going(board: &Board, checking: bool, av_moves:&AvailableMovesM
             if checking {
                 return 0.0; // stalemate
             } else {
-                if !board.ai_team{
+                if !board.ai_team_is_white{
                     return game_states.ai_checkmate; // ai wins
                 }
                 else{

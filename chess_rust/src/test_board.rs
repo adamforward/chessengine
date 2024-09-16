@@ -740,6 +740,7 @@ pub fn write_to_moves_validator(file_path: &str) {
         }
     }
 }
+
 pub fn test_search(){
     let b=init_board(true);
     let searching_treenode=TreeNode{game:b.clone(), level:0, children:vec![]};

@@ -26,7 +26,7 @@ pub fn generate_top_moves(num_moves: i32, parent:TreeNode)->Vec<TreeNode> {
             for &j in moves.iter(){
                 let param_move=curr_game.clone();
                 let potential_move=move_piece(param_move, i, j);
-                let advantage=board_position_advantage_eval(&potential_move.full_board, curr_game.ai_team_is_white, &NeuralNetworkSelector::Model4);
+                let advantage=board_position_advantage_eval(&potential_move.full_board, curr_game.ai_team_is_white, &NeuralNetworkSelector::Model7);
                 advantage_map.push(AdavantageMap{board:potential_move, advantage});
             }
         }
@@ -38,7 +38,7 @@ pub fn generate_top_moves(num_moves: i32, parent:TreeNode)->Vec<TreeNode> {
             for &j in moves.iter(){
                 let param_move=curr_game.clone();
                 let potential_move=move_piece(param_move, i, j);
-                let advantage=board_position_advantage_eval(&potential_move.full_board, curr_game.ai_team_is_white, &NeuralNetworkSelector::Model4);
+                let advantage=board_position_advantage_eval(&potential_move.full_board, curr_game.ai_team_is_white, &NeuralNetworkSelector::Model7);
                 advantage_map.push(AdavantageMap{board:potential_move, advantage});
             }
         }

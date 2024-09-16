@@ -68,7 +68,7 @@ pub fn pgn_to_hash(b:&Board, standard_format_move:&str, moves:&AllMovesGenRe)->M
     let cols=vec!["a", "b", "c", "d", "e", "f", "g", "h"];
     let mut split_sfm=split_string_to_chars(standard_format_move);
     
-    if split_sfm[split_sfm.len()-1]=="+"{ //nothing in my data model for checking
+    if split_sfm[split_sfm.len()-1]=="+" || split_sfm[split_sfm.len()-1]=="#"{ //nothing in my data model for checking
         split_sfm.remove(split_sfm.len()-1);
     }
 
@@ -405,7 +405,7 @@ fn ai_move(b:Board, pgn:&str)->Option<AIMoveRe>{
     if b.turn<10{
     let b2=b.clone();
     // Load the JSON file into a string
-    let data = fs::read_to_string("opening_book.json")
+    let data = fs::read_to_string("src/opening_book.json")
         .expect("Unable to read file");
     // Parse the JSON string into a HashMap for efficient key-value access
     let book: HashMap<String, String> = serde_json::from_str(&data)
@@ -427,12 +427,12 @@ fn ai_move(b:Board, pgn:&str)->Option<AIMoveRe>{
     let mut the_move:Move=Move {piece:PieceId::Error, location:10000};
     let mut re:AIMoveRe=AIMoveRe{b:b.clone(),m:the_move};
     if b.turn%2==0{
-        let mut biggest_mm:f32=0.0;
+        let mut biggest_mm:f32=-f32::INFINITY;
         for i in b.white_piece_ids.iter(){
             for j in av_moves.moves.get_moves(*i).iter(){
                 let searching_b=move_piece(b.clone(), *i,*j);
                 let searching_treenode=TreeNode {game:searching_b.clone(), level:0, children:vec![]};
-                let new_mm=search(searching_treenode, 5, 5, biggest_mm, 1.0);//will tweak depth and width params
+                let new_mm=search(searching_treenode, 6, 3, biggest_mm, 1.0);//will tweak depth and width params
                 if new_mm>biggest_mm{
                     biggest_mm=new_mm;
                     the_move=Move {piece:*i, location:*j};
@@ -443,12 +443,12 @@ fn ai_move(b:Board, pgn:&str)->Option<AIMoveRe>{
         return Some(re);
     }
     else{
-        let mut biggest_mm:f32=0.0;
+        let mut biggest_mm:f32=-f32::INFINITY;
         for i in b.black_piece_ids.iter(){
             for j in av_moves.moves.get_moves(*i).iter(){
                 let searching_b=move_piece(b.clone(), *i,*j);
                 let searching_treenode=TreeNode {game:searching_b.clone(), level:0, children:vec![]};
-                let new_mm=search(searching_treenode, 5, 5, biggest_mm, 1.0);
+                let new_mm=search(searching_treenode, 6, 3, biggest_mm, 1.0);
                 if biggest_mm<new_mm{
                     biggest_mm=new_mm;
                     the_move=Move {piece:*i, location:*j};
