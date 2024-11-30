@@ -2,4 +2,5 @@
 
 ai/env/**
 
-*/target/*
+*/target/*chess_rust/newenv/
+chess_rust/Miniconda3-latest-MacOSX-arm64.sh
