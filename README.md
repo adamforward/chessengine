@@ -1,48 +1,69 @@
-Chess Game with AI
-This is a project to create a chess game with an AI opponent. The game has been implemented using the object-oriented programming paradigm in Python. The AI opponent uses the minimax algorithm along with alpha-beta pruning to make its moves.
+AF Chess Engine
+AF Chess Engine is a chess-playing application powered by a Rust backend and a neural network model. The project is deployed at afchessengine.com, where you can experience the chess engine in action.
 
-Requirements
-Python 3.x
-numpy
-copy
+Project Overview
+This repository contains the code for the backend of the AF Chess Engine. The backend is implemented in Rust and uses a neural network (nn7.pt) along with an opening book (opening_book.json) to enhance its chess-playing capabilities.
+
+Note: This repository does not include the large files necessary to run the backend. These files are essential for the engine's functionality.
+
+nn7.pt: The neural network model used for move evaluation.
+opening_book.json: The precomputed opening book for optimized gameplay.
+If you need access to these files, please email adamforward19@gmail.com for more information.
+
+Deployment Details
+Website: https://afchessengine.com
+Backend: Rust-based API hosted at https://api.afchessengine.com.
+The backend and frontend communicate seamlessly to provide a smooth and interactive chess-playing experience.
+
 Getting Started
-Clone the repository to your local machine.
+Prerequisites
+To run the backend locally, ensure you have the following installed:
 
-shell
+Rust (latest stable version recommended)
+Docker (for containerized deployment)
+Required large files (nn7.pt and opening_book.json)
+Running Locally
+Clone the repository:
+
+bash
 Copy code
-$ git clone https://github.com/<username>/chess-game-with-ai.git
-Move into the project directory
+git clone https://github.com/your-repo-name.git
+cd chess_rust
+Obtain the required large files (nn7.pt and opening_book.json) by emailing adamforward19@gmail.com. Place these files in the appropriate directory.
 
-shell
+Build and run the backend:
+
+bash
 Copy code
-$ cd chess-game-with-ai
-Running the Game
-The game can be run by executing the main.py file.
+cargo build --release
+cargo run
+The server will be accessible at http://127.0.0.1:3000. You can use curl or any HTTP client to test the endpoints.
 
-css
+Using Docker
+Build the Docker image:
+
+bash
 Copy code
-$ python main.py
-Game Implementation
-The game has been implemented using the following classes:
+docker build -t chess_rust_backend .
+Run the container:
 
-board class to represent the chess board.
-piece class to represent individual chess pieces.
-treeNode class to represent the nodes of the game tree for the AI to use in its decision making.
-The main.py file initializes the game and contains the main game loop where moves are made by the player and AI opponent.
+bash
+Copy code
+docker run -d -p 3000:3000 --name chess_rust_backend chess_rust_backend
+The server will now be available at http://127.0.0.1:3000.
 
-The AI's move is determined by calling the search function in the main.py file, which uses the minimax algorithm along with alpha-beta pruning to make its move.
-
-Contributing
-We welcome contributions to this project. To contribute, please follow these steps:
-
-Fork the repository.
-Clone the repository to your local machine.
-Create a new branch with a descriptive name for your changes.
-Make the changes and commit them to your branch.
-Push the branch to your fork.
-Submit a pull request.
-License
-This project is licensed under the MIT License. See LICENSE for details.
-
-
-
+API Endpoints
+/move (POST)
+Description: Processes a move request and returns the next best move.
+Request Body:
+json
+{
+  "player_team_is_white": false,
+  "uci": [] (array of strings)
+}
+Response:
+json
+Copy code
+"e2e4"
+About
+For more details about the AF Chess Engine, visit the "About" section of the website.
