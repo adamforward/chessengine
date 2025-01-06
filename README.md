@@ -1,6 +1,6 @@
 AF Chess Engine is a chess-playing application powered by a Rust backend and a neural network model. The project is deployed at afchessengine.com, where you can experience the chess engine in action.
 
-Project Overview
+Project Overview:
 This repository contains the code for the backend of the AF Chess Engine. The backend is implemented in Rust and uses a neural network (nn7.pt) along with an opening book (opening_book.json) to enhance its chess-playing capabilities.
 
 Note: This repository does not include the large files necessary to run the backend. These files are essential for the engine's functionality.
