@@ -1,4 +1,3 @@
-AF Chess Engine
 AF Chess Engine is a chess-playing application powered by a Rust backend and a neural network model. The project is deployed at afchessengine.com, where you can experience the chess engine in action.
 
 Project Overview
