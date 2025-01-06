@@ -1,6 +1,5 @@
 use std::{cell::RefCell, rc::Rc};
 use serde::{Deserialize, Serialize};
-use crate::mongo_repo::{MongoBoard};
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Kind {
     Pawn,
@@ -340,11 +339,7 @@ pub struct RenderPiece {
     pub team: Team,
 }
 
-pub struct ServerProcessingRe {
-    pub b:MongoBoard, 
-    pub pgn:String,
-}
-
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AIMoveRe{
     pub m:Move,
     pub b:Board,

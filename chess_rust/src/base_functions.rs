@@ -547,3 +547,6 @@ fn safe_remove<T: PartialEq>(vec: &mut Vec<T>, element: T) {
     }
 }
 
+pub fn ai_turn(b:&Board)->bool{
+    return b.ai_team_is_white == (b.turn%2==0);
+}

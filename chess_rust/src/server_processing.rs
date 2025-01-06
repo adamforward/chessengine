@@ -1,15 +1,13 @@
 use crate::test_board::{split_string_to_chars, reverse_mapping_2, reverse_row_mapping, reverse_col_mapping, map_standard_format_to_kind };
-use crate::types::{Board,Move, GameStateIdentifiers, Kind,PieceId,AllMovesGenRe,Team, ServerProcessingRe, TreeNode,MoveAdvMap,AIMoveRe};
+use crate::types::{Board,Move, GameStateIdentifiers, Kind,PieceId,AllMovesGenRe,Team, TreeNode,MoveAdvMap,AIMoveRe};
 use crate::base_functions::{contains_element, map_piece_id_to_kind, init_board};
 use crate::upper_move_functions::{all_moves_gen, move_piece};
-use crate::mongo_repo::{MongoRepo, MongoBoard};
 use std::{cell::RefCell, rc::Rc};
 use crate::search_functions::{generate_top_moves, search};
 use crate::ai_functions::{game_still_going};
 use serde_json::Value;
 use std::fs;
 use std::collections::HashMap;
-use tch::{nn, nn::VarStore, Device, Tensor};
 
 
 pub fn row_mapping(n: usize) -> &'static str {
@@ -54,167 +52,78 @@ fn mapping_2(n: usize) -> &'static str {
     }
 }
 
-pub fn pgn_to_hash(b:&Board, standard_format_move:&str, moves:&AllMovesGenRe)->Move{
-    println!("{}", standard_format_move);
 
-    if standard_format_move=="O-O-O"{ //castling
-        return Move {piece:PieceId::K, location:100};
-    }
-    if standard_format_move=="O-O"{
-        return Move {piece:PieceId::K, location:99};
-    }
-
-    let rows=vec!["8", "7", "6", "5", "4", "3", "2", "1"];
-    let cols=vec!["a", "b", "c", "d", "e", "f", "g", "h"];
-    let mut split_sfm=split_string_to_chars(standard_format_move);
-    
-    if split_sfm[split_sfm.len()-1]=="+" || split_sfm[split_sfm.len()-1]=="#"{ //nothing in my data model for checking
-        split_sfm.remove(split_sfm.len()-1);
-    }
-
-    let move_as_str=format!("{}{}", split_sfm[split_sfm.len()-2], split_sfm[split_sfm.len()-1]);
-    let loc=reverse_mapping_2(&move_as_str);
-
-    let kind=map_standard_format_to_kind(&split_sfm[0]);
-    let col=reverse_col_mapping(&split_sfm[split_sfm.len()-2]);
-    let mut valid_indexes:Vec<usize>=vec![];
-
-    if kind==Kind::King{ //simple since there's only ever 1 king
-        return Move {piece:PieceId::K, location: loc};
-    } 
-
-
-    if b.turn%2==0{
-        //101 is pawn to q, 102 is pawn to k
-        if loc==101 || loc==102{
-
-            let location=reverse_col_mapping(&split_sfm[split_sfm.len()-4]);
-
-            for i in b.white_piece_ids.iter(){
-                if contains_element(&moves.moves.get_moves(*i), location){
-                    valid_indexes.push(b.white_indexes.get_index(*i).unwrap());
-                }
-            }
-
-            if valid_indexes.len()==1{
-                if loc==101{
-                    return Move {piece: b.white_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:location}
-                }else{
-                    return Move {piece: b.white_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:80+location}
-                }
-            } else{
-                let starting_col=reverse_col_mapping(&split_sfm[0]);
-                if loc==102{
-                    return Move {piece: b.white_i_to_p.get_piece(10+starting_col).unwrap(), location:80+location}
-                } else{
-                    return Move {piece: b.white_i_to_p.get_piece(10+starting_col).unwrap(), location:location}
-                }
-            }
-        }
-
-        for i in b.white_piece_ids.iter(){
-            if map_piece_id_to_kind(*i)==kind{
-                if kind==Kind::Pawn &&split_sfm.len()==2 && b.white_indexes.get_index(*i).unwrap()%10==col && contains_element(&moves.moves.get_moves(*i), loc){
-                    return Move {piece:*i, location:loc};
-                }
-                if kind==Kind::Queen || kind==Kind::Knight || kind==Kind::Rook || kind==Kind::Pawn || kind==Kind::Bishop{
-                    if contains_element(&moves.moves.get_moves(*i), loc){
-                        valid_indexes.push(b.white_indexes.get_index(*i).unwrap());
-                    }
-                }
-            }
-        }
-        if valid_indexes.len()==1{
-            return Move { piece: b.white_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
+fn hash_to_uci(start_index:usize, final_index:usize, white:bool, pawn:bool)->String{
+    println!("start_index, final index, white, pawn {} {} {} {}", start_index, final_index, white, pawn);
+    if final_index==99{
+        if white{
+            return "e1g1".to_string();
         }
         else{
-            for i in split_sfm.iter(){
-                if contains_element(&cols, i){
-                    let c=reverse_col_mapping(i);
-                    if c%10==valid_indexes[0]%10{
-                        return Move { piece: b.white_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
-                    }
-                    else{
-                        return Move { piece: b.white_i_to_p.get_piece(valid_indexes[1]).unwrap(), location:loc};
-                    }
-                }
-                if contains_element(&rows, i){
-                    let r=reverse_row_mapping(i);
-                    if r/10==valid_indexes[0]/10{
-                        return Move { piece: b.white_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
-                    }
-                    else{
-                        return Move { piece: b.white_i_to_p.get_piece(valid_indexes[1]).unwrap(), location:loc};
-                    }
-                }
-            }
+            return "e8g8".to_string();
         }
     }
-    else{
-        if loc==101 || loc==102{
-            let location=reverse_col_mapping(&split_sfm[split_sfm.len()-4]) + 70;
-
-            for i in b.black_piece_ids.iter(){
-                if contains_element(&moves.moves.get_moves(*i), location){
-                    valid_indexes.push(b.black_indexes.get_index(*i).unwrap());
-                }
-            }
-
-            if valid_indexes.len()==1{
-                if loc==101{
-                    return Move {piece: b.black_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:location}
-                }else{
-                    return Move {piece: b.black_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:10+location}
-                }
-            }else{
-                let starting_col=reverse_col_mapping(&split_sfm[0]);
-                if loc==102{
-                    return Move {piece: b.black_i_to_p.get_piece(60+starting_col).unwrap(), location:10+location}
-                } else{
-                    return Move {piece: b.black_i_to_p.get_piece(60+starting_col).unwrap(), location:location}
-                }
-            }
-        }
-
-        for i in b.black_piece_ids.iter(){
-            if map_piece_id_to_kind(*i)==kind{
-                if kind==Kind::Pawn && split_sfm.len()==2&& b.black_indexes.get_index(*i).unwrap()%10==col && contains_element(&moves.moves.get_moves(*i), loc){
-                    return Move {piece:*i, location:loc};
-                }
-                if kind==Kind::Queen || kind==Kind::Knight || kind==Kind::Rook ||kind==Kind::Pawn || kind==Kind::Bishop{
-                    if contains_element(&moves.moves.get_moves(*i), loc){
-                        valid_indexes.push(b.black_indexes.get_index(*i).unwrap());
-                    }
-                }
-            }
-        }
-        if valid_indexes.len()==1{
-            return Move { piece: b.black_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
+    if final_index==100{
+        if white{
+            return "e1c1".to_string();
         }
         else{
-            for i in split_sfm.iter(){
-                if contains_element(&cols, i){
-                    let c=reverse_col_mapping(i);
-                    if c%10==valid_indexes[0]%10{
-                        return Move { piece: b.black_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
-                    }
-                    else{
-                        return Move { piece: b.black_i_to_p.get_piece(valid_indexes[1]).unwrap(), location:loc};
-                    }
-                }
-                if contains_element(&rows, i){
-                    let r=reverse_row_mapping(i);
-                    if r/10==valid_indexes[0]/10{
-                        return Move { piece: b.black_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
-                    }
-                    else{
-                        return Move { piece: b.black_i_to_p.get_piece(valid_indexes[1]).unwrap(), location:loc};
-                    }
-                }
-            }
+            return "e8c8".to_string();
         }
     }
-    return Move {piece:PieceId::Error, location:54321};
+    if pawn && white && (final_index/10==0 || final_index/10==8){
+        if final_index/10==8{
+            return format!("{}{}{}", mapping_2(start_index), mapping_2(final_index%10), "n");
+        }
+        else{
+            return format!("{}{}{}", mapping_2(start_index), mapping_2(final_index), "q");
+        }
+    }
+    if pawn && !white && (final_index/10==7 || final_index/10==8){
+        if final_index/10==8{
+            return format!("{}{}{}", mapping_2(start_index), mapping_2(70+final_index%10), "n");
+        }
+        else{
+            return format!("{}{}{}", mapping_2(start_index), mapping_2(final_index), "q");
+        }
+    }
+    return format!("{}{}", mapping_2(start_index), mapping_2(final_index));
+}
+
+fn uci_to_hash(uci:String, white:bool, ks:bool, qs:bool)->(usize, usize){
+    if ks{
+        if white{
+            return (74, 99);
+        }
+        else{
+            return (4, 99);
+        }
+    }
+    if qs{
+        if white{
+            return (74, 100);
+        }
+        else{
+            return (4, 100);
+        }
+    }
+    let (initial_indexes, final_indexes) = uci.split_at(2);
+    if final_indexes.len() == 2 {
+        return (reverse_mapping_2(initial_indexes), reverse_mapping_2(final_indexes));
+    }
+    else{ //promotion
+        let promo_type=&uci[4..5];
+        let promo_col=&uci[2..3]; 
+        if promo_type=="n"{
+            return(reverse_mapping_2(initial_indexes), 80+reverse_col_mapping(promo_col));
+        }
+        if white{
+            return(reverse_mapping_2(initial_indexes), reverse_col_mapping(promo_col));
+        }
+        else{
+            return(reverse_mapping_2(initial_indexes), 70+reverse_col_mapping(promo_col));
+        }
+    }
 }
 
 fn kind_to_str_map(k: Kind) -> &'static str {
@@ -359,49 +268,71 @@ fn combine_strings(strings: Vec<&str>) -> String {
     result
 }
 
-pub fn process_server_response(pgn:String, last_game:Option<MongoBoard>)->ServerProcessingRe{
-    let address_pgn:&str=pgn.as_str();
-    if last_game.is_none() {
-
-        if pgn.len()==0{
-            //if white start always move e4
-            let initial_board=init_board(true);
-            let pgn2="e4";
-            let moved2=move_piece(initial_board, PieceId::P5, 44);
-            return ServerProcessingRe{b:MongoBoard{board:moved2, pgn:pgn2.to_string()}, pgn:pgn2.to_string()};
+pub fn process_server_response(game_history: Vec<String>, ai_team_is_white:bool) -> String {
+    println!("ai team {}", ai_team_is_white);
+    println!("{:?}", game_history);
+    if game_history.len() == 0 {
+        return "e2e4".to_string();
+    } else {
+        let mut start_board = init_board(ai_team_is_white);
+        let mut proper_order:Vec<String>=vec![];
+        for i in game_history.iter().rev() {
+            let mut qs=false;
+            let mut ks=false; 
+            proper_order.push(i.to_string());
+            if start_board.turn%2==0{
+                if i.to_string()=="e1g1".to_string() && start_board.prime2%5!=0{
+                    ks=true;
+                }
+                if i.to_string()=="e1c1".to_string() && start_board.prime2%5!=0{
+                    qs=true;
+                }
+            }
+            else{
+                if i.to_string()=="e8g8".to_string() && start_board.prime2%13!=0{
+                    ks=true;
+                }
+                if i.to_string()=="e8c8".to_string() && start_board.prime2%13!=0{
+                    qs=true;
+                }
+            }
+            let (old_indexes, new_indexes) = uci_to_hash(i.to_string(), start_board.turn%2==0, ks, qs);
+            let move_p: PieceId = if start_board.turn%2==0{
+                start_board.white_i_to_p.get_piece(old_indexes)
+            } else {
+                start_board.black_i_to_p.get_piece(old_indexes)
+            }
+            .unwrap();
+            start_board = move_piece(start_board, move_p, new_indexes);
         }
-
-        else{
-            //black start
-            let initial_board=init_board(true);
-            let moves=all_moves_gen(&initial_board);
-            let hash=pgn_to_hash(&initial_board, address_pgn, &moves);
-            let turn_2=move_piece(initial_board, hash.piece, hash.location);
-            let moved=ai_move(turn_2.clone(), address_pgn).unwrap();
-            let moved2=move_piece(moved.b, moved.m.piece, moved.m.location);
-            let pgn2=hash_to_pgn(&turn_2, moved.m.piece, moved.m.location,&moves);
-            let pgn3=format!("{}{}", pgn, pgn2);
-            return ServerProcessingRe{b:MongoBoard{board:moved2,pgn:pgn3}, pgn:pgn2};
-        }
-    }
-    
-    else{
-        //past turn 2
-        let last_game=last_game.unwrap();
-        let moves=all_moves_gen(&last_game.board);
-        let hash=pgn_to_hash(&last_game.board,address_pgn,&moves);
-        let turn_2=move_piece(last_game.board.clone(), hash.piece, hash.location);
-        let ai_move_param_pgn=last_game.pgn;
-        let moved=ai_move(turn_2.clone(), &ai_move_param_pgn).unwrap();
-        let moved2=move_piece(moved.b.clone(), moved.m.piece, moved.m.location);
-        let pgn2=hash_to_pgn(&turn_2, moved.m.piece, moved.m.location,&moves);
-        let pgn3=format!("{}{}", pgn, pgn2);
-        let pgn4=format!("{}{}", ai_move_param_pgn, pgn3);
-        return ServerProcessingRe{b:MongoBoard{board:moved2,pgn:pgn4}, pgn:pgn2};
+        let start_board2 = start_board.clone();
+        //print_all(start_board2.clone());
+        let ai_move_returned = ai_move(start_board2.clone(), &proper_order.iter().map(|s| format!("{}", s)).collect::<String>()).unwrap();
+        let ai_move_returned2=ai_move_returned.clone();
+        let ai_move_returned3=ai_move_returned.clone();
+        let init_indexes = if start_board2.ai_team_is_white {
+            start_board2.white_indexes.get_index(ai_move_returned2.m.piece).unwrap()
+        } else {
+            start_board2.black_indexes.get_index(ai_move_returned2.m.piece).unwrap()
+        };
+        println!("piece {}", ai_move_returned3.m.piece.to_string());
+        let pawn= map_piece_id_to_kind(ai_move_returned3.m.piece) == Kind::Pawn;
+        println!("output {}", hash_to_uci(
+            init_indexes,
+            ai_move_returned3.m.location,
+            ai_move_returned3.b.ai_team_is_white,
+            pawn,
+        ));
+        return hash_to_uci(
+            init_indexes,
+            ai_move_returned3.m.location,
+            ai_move_returned3.b.ai_team_is_white,
+            pawn,
+        );
     }
 }
 
-fn ai_move(b:Board, pgn:&str)->Option<AIMoveRe>{
+fn ai_move(b:Board, uci:&str)->Option<AIMoveRe>{
     if b.turn<10{
     let b2=b.clone();
     // Load the JSON file into a string
@@ -410,12 +341,41 @@ fn ai_move(b:Board, pgn:&str)->Option<AIMoveRe>{
     // Parse the JSON string into a HashMap for efficient key-value access
     let book: HashMap<String, String> = serde_json::from_str(&data)
         .expect("JSON was not well-formatted");
-    if let Some(move_value) = book.get(pgn) {
+    if let Some(move_value) = book.get(uci) {
+        let mut ks=false;
+        let mut qs=false;
         //if something is returned from the opening book
+        if b2.turn%2==0{
+                if (move_value.to_string()=="e1g1".to_string() && b2.prime2%5==0) || move_value.to_string()=="O-O".to_string(){
+                    ks=true;
+                }
+                if (move_value.to_string()=="e1c1".to_string() && b2.prime2%5==0) || move_value.to_string()=="O-O-O".to_string(){
+                    qs=true;
+                }
+            }
+        else{
+            if (move_value.to_string()=="e8g8".to_string() && b2.prime2%13==0) || move_value.to_string()=="O-O".to_string(){
+                ks=true;
+            }
+            if (move_value.to_string()=="e8c8".to_string() && b2.prime2%13==0)|| move_value.to_string()=="O-O-O".to_string() {
+                qs=true;
+            }
+        }
         let param_moves=all_moves_gen(&b);
-        let re_move:Move=pgn_to_hash(&b, move_value, &param_moves);
-        let moved_board=move_piece(b2,re_move.piece, re_move.location);
-        return Some(AIMoveRe{b:moved_board,m:re_move});
+        let (start_index, end_index)=uci_to_hash(move_value.to_string(), b2.turn%2==0, ks, qs);
+        let moved_board:Board;
+        let the_piece:PieceId;
+        let b3=b2.clone();
+        let b4=b3.clone();
+        if b2.turn%2==0{
+            moved_board=move_piece(b4, b2.white_i_to_p.get_piece(start_index).unwrap(), end_index);
+            the_piece=b3.white_i_to_p.get_piece(start_index).unwrap();
+        }
+        else{
+            moved_board=move_piece(b4, b2.black_i_to_p.get_piece(start_index).unwrap(), end_index);
+            the_piece=b3.black_i_to_p.get_piece(start_index).unwrap();
+        }
+        return Some(AIMoveRe{b:moved_board,m:Move{piece:the_piece, location:end_index}});
     }
     }
     let game_states=GameStateIdentifiers::new();
@@ -432,7 +392,7 @@ fn ai_move(b:Board, pgn:&str)->Option<AIMoveRe>{
             for j in av_moves.moves.get_moves(*i).iter(){
                 let searching_b=move_piece(b.clone(), *i,*j);
                 let searching_treenode=TreeNode {game:searching_b.clone(), level:0, children:vec![]};
-                let new_mm=search(searching_treenode, 6, 3, biggest_mm, 1.0);//will tweak depth and width params
+                let new_mm=search(searching_treenode, 5, 2, biggest_mm, 1.0);//will tweak depth and width params
                 if new_mm>biggest_mm{
                     biggest_mm=new_mm;
                     the_move=Move {piece:*i, location:*j};
@@ -448,7 +408,7 @@ fn ai_move(b:Board, pgn:&str)->Option<AIMoveRe>{
             for j in av_moves.moves.get_moves(*i).iter(){
                 let searching_b=move_piece(b.clone(), *i,*j);
                 let searching_treenode=TreeNode {game:searching_b.clone(), level:0, children:vec![]};
-                let new_mm=search(searching_treenode, 6, 3, biggest_mm, 1.0);
+                let new_mm=search(searching_treenode, 5, 2, biggest_mm, 1.0);
                 if biggest_mm<new_mm{
                     biggest_mm=new_mm;
                     the_move=Move {piece:*i, location:*j};

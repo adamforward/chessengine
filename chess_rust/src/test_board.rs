@@ -1,9 +1,8 @@
 use crate::base_functions::{init_board, map_piece_id_to_kind, find_non_overlap, find_overlap, contains_element};
-use crate::types::{Board, Piece, PieceId, Team, Kind, Move, TreeNode, NeuralNetworkSelector};
+use crate::types::{Board, Piece, PieceId, Team, Kind, Move, AllMovesGenRe, TreeNode, NeuralNetworkSelector};
 use crate::upper_move_functions::{all_moves_gen, move_piece};
 use crate::search_functions::{search, generate_top_moves};
-use crate::server_processing::{pgn_to_hash};
-use crate::ai_functions::{get_next_move, game_still_going};
+use crate::ai_functions::{game_still_going};
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -34,7 +33,7 @@ pub fn reverse_mapping_2(b: &str) -> usize {
         "a3" => 50, "b3" => 51, "c3" => 52, "d3" => 53, "e3" => 54, "f3" => 55, "g3" => 56, "h3" => 57,
         "a2" => 60, "b2" => 61, "c2" => 62, "d2" => 63, "e2" => 64, "f2" => 65, "g2" => 66, "h2" => 67,
         "a1" => 70, "b1" => 71, "c1" => 72, "d1" => 73, "e1" => 74, "f1" => 75, "g1" => 76, "h1" => 77,
-        "O-O"=>99, "O-O-O"=>100, "=Q"=>101, "=N"=>102,
+        "O-O"=>99, "O-O-O"=>100,
         _ => 100000,
     }
 }
@@ -51,7 +50,168 @@ pub fn reverse_col_mapping(b:&str)->usize{
     }
 }
 
+pub fn pgn_to_hash(b:&Board, standard_format_move:&str, moves:&AllMovesGenRe)->Move{
+    println!("{}", standard_format_move);
 
+    if standard_format_move=="O-O-O"{ //castling
+        return Move {piece:PieceId::K, location:100};
+    }
+    if standard_format_move=="O-O"{
+        return Move {piece:PieceId::K, location:99};
+    }
+
+    let rows=vec!["8", "7", "6", "5", "4", "3", "2", "1"];
+    let cols=vec!["a", "b", "c", "d", "e", "f", "g", "h"];
+    let mut split_sfm=split_string_to_chars(standard_format_move);
+    
+    if split_sfm[split_sfm.len()-1]=="+" || split_sfm[split_sfm.len()-1]=="#"{ //nothing in my data model for checking
+        split_sfm.remove(split_sfm.len()-1);
+    }
+
+    let move_as_str=format!("{}{}", split_sfm[split_sfm.len()-2], split_sfm[split_sfm.len()-1]);
+    let loc=reverse_mapping_2(&move_as_str);
+
+    let kind=map_standard_format_to_kind(&split_sfm[0]);
+    let col=reverse_col_mapping(&split_sfm[split_sfm.len()-2]);
+    let mut valid_indexes:Vec<usize>=vec![];
+
+    if kind==Kind::King{ //simple since there's only ever 1 king
+        return Move {piece:PieceId::K, location: loc};
+    } 
+
+
+    if b.turn%2==0{
+        //101 is pawn to q, 102 is pawn to k
+        if loc==101 || loc==102{
+
+            let location=reverse_col_mapping(&split_sfm[split_sfm.len()-4]);
+
+            for i in b.white_piece_ids.iter(){
+                if contains_element(&moves.moves.get_moves(*i), location){
+                    valid_indexes.push(b.white_indexes.get_index(*i).unwrap());
+                }
+            }
+
+            if valid_indexes.len()==1{
+                if loc==101{
+                    return Move {piece: b.white_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:location}
+                }else{
+                    return Move {piece: b.white_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:80+location}
+                }
+            } else{
+                let starting_col=reverse_col_mapping(&split_sfm[0]);
+                if loc==102{
+                    return Move {piece: b.white_i_to_p.get_piece(10+starting_col).unwrap(), location:80+location}
+                } else{
+                    return Move {piece: b.white_i_to_p.get_piece(10+starting_col).unwrap(), location:location}
+                }
+            }
+        }
+
+        for i in b.white_piece_ids.iter(){
+            if map_piece_id_to_kind(*i)==kind{
+                if kind==Kind::Pawn &&split_sfm.len()==2 && b.white_indexes.get_index(*i).unwrap()%10==col && contains_element(&moves.moves.get_moves(*i), loc){
+                    return Move {piece:*i, location:loc};
+                }
+                if kind==Kind::Queen || kind==Kind::Knight || kind==Kind::Rook || kind==Kind::Pawn || kind==Kind::Bishop{
+                    if contains_element(&moves.moves.get_moves(*i), loc){
+                        valid_indexes.push(b.white_indexes.get_index(*i).unwrap());
+                    }
+                }
+            }
+        }
+        if valid_indexes.len()==1{
+            return Move { piece: b.white_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
+        }
+        else{
+            for i in split_sfm.iter(){
+                if contains_element(&cols, i){
+                    let c=reverse_col_mapping(i);
+                    if c%10==valid_indexes[0]%10{
+                        return Move { piece: b.white_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
+                    }
+                    else{
+                        return Move { piece: b.white_i_to_p.get_piece(valid_indexes[1]).unwrap(), location:loc};
+                    }
+                }
+                if contains_element(&rows, i){
+                    let r=reverse_row_mapping(i);
+                    if r/10==valid_indexes[0]/10{
+                        return Move { piece: b.white_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
+                    }
+                    else{
+                        return Move { piece: b.white_i_to_p.get_piece(valid_indexes[1]).unwrap(), location:loc};
+                    }
+                }
+            }
+        }
+    }
+    else{
+        if loc==101 || loc==102{
+            let location=reverse_col_mapping(&split_sfm[split_sfm.len()-4]) + 70;
+
+            for i in b.black_piece_ids.iter(){
+                if contains_element(&moves.moves.get_moves(*i), location){
+                    valid_indexes.push(b.black_indexes.get_index(*i).unwrap());
+                }
+            }
+
+            if valid_indexes.len()==1{
+                if loc==101{
+                    return Move {piece: b.black_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:location}
+                }else{
+                    return Move {piece: b.black_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:10+location}
+                }
+            }else{
+                let starting_col=reverse_col_mapping(&split_sfm[0]);
+                if loc==102{
+                    return Move {piece: b.black_i_to_p.get_piece(60+starting_col).unwrap(), location:10+location}
+                } else{
+                    return Move {piece: b.black_i_to_p.get_piece(60+starting_col).unwrap(), location:location}
+                }
+            }
+        }
+
+        for i in b.black_piece_ids.iter(){
+            if map_piece_id_to_kind(*i)==kind{
+                if kind==Kind::Pawn && split_sfm.len()==2&& b.black_indexes.get_index(*i).unwrap()%10==col && contains_element(&moves.moves.get_moves(*i), loc){
+                    return Move {piece:*i, location:loc};
+                }
+                if kind==Kind::Queen || kind==Kind::Knight || kind==Kind::Rook ||kind==Kind::Pawn || kind==Kind::Bishop{
+                    if contains_element(&moves.moves.get_moves(*i), loc){
+                        valid_indexes.push(b.black_indexes.get_index(*i).unwrap());
+                    }
+                }
+            }
+        }
+        if valid_indexes.len()==1{
+            return Move { piece: b.black_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
+        }
+        else{
+            for i in split_sfm.iter(){
+                if contains_element(&cols, i){
+                    let c=reverse_col_mapping(i);
+                    if c%10==valid_indexes[0]%10{
+                        return Move { piece: b.black_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
+                    }
+                    else{
+                        return Move { piece: b.black_i_to_p.get_piece(valid_indexes[1]).unwrap(), location:loc};
+                    }
+                }
+                if contains_element(&rows, i){
+                    let r=reverse_row_mapping(i);
+                    if r/10==valid_indexes[0]/10{
+                        return Move { piece: b.black_i_to_p.get_piece(valid_indexes[0]).unwrap(), location:loc};
+                    }
+                    else{
+                        return Move { piece: b.black_i_to_p.get_piece(valid_indexes[1]).unwrap(), location:loc};
+                    }
+                }
+            }
+        }
+    }
+    return Move {piece:PieceId::Error, location:54321};
+}
 
 pub fn map_standard_format_to_kind(input: &str)->Kind{
     match input{
@@ -662,88 +822,88 @@ fn get_std_format(index:usize)->String{
     return format!("{}{}", col_map[index%10], row_map[index/10]);
 }
 
-pub fn write_to_moves_validator(file_path: &str) {
-    let white = NeuralNetworkSelector::Model5;
-    let black = NeuralNetworkSelector::Model3;
+// pub fn write_to_moves_validator(file_path: &str) {
+//     let white = NeuralNetworkSelector::Model5;
+//     let black = NeuralNetworkSelector::Model3;
 
-    // Open the file in append mode
-    let mut file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(file_path)
-        .expect("Unable to open file");
+//     // Open the file in append mode
+//     let mut file = OpenOptions::new()
+//         .create(true)
+//         .append(true)
+//         .open(file_path)
+//         .expect("Unable to open file");
 
-    for i in 0..=100 {
-        let mut game = init_board(true);
-        let mut done = false;
-        while !done {
-            if game.turn % 2 == 0 {
-                game = get_next_move(game, &white);
-            } else {
-                game = get_next_move(game, &black);
-            }
+//     for i in 0..=100 {
+//         let mut game = init_board(true);
+//         let mut done = false;
+//         while !done {
+//             if game.turn % 2 == 0 {
+//                 game = get_next_move(game, &white);
+//             } else {
+//                 game = get_next_move(game, &black);
+//             }
 
-            let fen: &str = &map_my_data_model_to_fen(&game.full_board);
-            let moves = all_moves_gen(&game).moves;
-            let mut standard_format_moves: Vec<String> = vec![];
+//             let fen: &str = &map_my_data_model_to_fen(&game.full_board);
+//             let moves = all_moves_gen(&game).moves;
+//             let mut standard_format_moves: Vec<String> = vec![];
 
-            if game.turn % 2 == 0 {
-                for j in game.white_piece_ids.iter() {
-                    for k in moves.get_moves(*j).iter() {
-                        if k/10==8{
-                            continue;
-                        }
-                        let std_f_move = format!(
-                            "{}{}",
-                            &get_std_format(game.white_indexes.get_index(*j).unwrap()),
-                            &get_std_format(*k)
-                        );
-                        standard_format_moves.push(std_f_move);
-                    }
-                }
-            } else {
-                for j in game.black_piece_ids.iter() {
-                    for k in moves.get_moves(*j).iter() {
-                        if k/10==8{
-                            continue;
-                        }//don't need the knight promotion here
-                        let std_f_move = format!(
-                            "{}{}",
-                            &get_std_format(game.black_indexes.get_index(*j).unwrap()),
-                            &get_std_format(*k)
-                        );
-                        standard_format_moves.push(std_f_move);
-                    }
-                }
-            }
+//             if game.turn % 2 == 0 {
+//                 for j in game.white_piece_ids.iter() {
+//                     for k in moves.get_moves(*j).iter() {
+//                         if k/10==8{
+//                             continue;
+//                         }
+//                         let std_f_move = format!(
+//                             "{}{}",
+//                             &get_std_format(game.white_indexes.get_index(*j).unwrap()),
+//                             &get_std_format(*k)
+//                         );
+//                         standard_format_moves.push(std_f_move);
+//                     }
+//                 }
+//             } else {
+//                 for j in game.black_piece_ids.iter() {
+//                     for k in moves.get_moves(*j).iter() {
+//                         if k/10==8{
+//                             continue;
+//                         }//don't need the knight promotion here
+//                         let std_f_move = format!(
+//                             "{}{}",
+//                             &get_std_format(game.black_indexes.get_index(*j).unwrap()),
+//                             &get_std_format(*k)
+//                         );
+//                         standard_format_moves.push(std_f_move);
+//                     }
+//                 }
+//             }
 
-            // Write FEN and moves to file
-            let turn:&str;
-            if game.turn%2==0{
-                turn="white"
-            }else{
-                turn="black"
-            }
-            if let Err(e) = writeln!(
-                file,
-                "Turn: {} FEN: {}\nMoves: {:?}\n",
-                turn,
-                fen,
-                standard_format_moves.join(", ")
-            ) {
-                eprintln!("Could not write to file: {}", e);
-            }
+//             // Write FEN and moves to file
+//             let turn:&str;
+//             if game.turn%2==0{
+//                 turn="white"
+//             }else{
+//                 turn="black"
+//             }
+//             if let Err(e) = writeln!(
+//                 file,
+//                 "Turn: {} FEN: {}\nMoves: {:?}\n",
+//                 turn,
+//                 fen,
+//                 standard_format_moves.join(", ")
+//             ) {
+//                 eprintln!("Could not write to file: {}", e);
+//             }
 
-            if game_still_going(&game, all_moves_gen(&game).checking, &moves) != 0.1 || game.turn > 150 {
-                done = true;
-            }
-        }
-    }
-}
+//             if game_still_going(&game, all_moves_gen(&game).checking, &moves) != 0.1 || game.turn > 150 {
+//                 done = true;
+//             }
+//         }
+//     }
+// }
 
-pub fn test_search(){
-    let b=init_board(true);
-    let searching_treenode=TreeNode{game:b.clone(), level:0, children:vec![]};
-    let biggest_mm=100.0;
-    let new_mm=search(searching_treenode, 5, 5, biggest_mm, -1.0);//will tweak depth and width params
-}
+// pub fn test_search(){
+//     let b=init_board(true);
+//     let searching_treenode=TreeNode{game:b.clone(), level:0, children:vec![]};
+//     let biggest_mm=100.0;
+//     let new_mm=search(searching_treenode, 5, 5, biggest_mm, -1.0);//will tweak depth and width params
+// }
