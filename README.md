@@ -9,10 +9,6 @@ nn7.pt: The neural network model used for move evaluation.
 opening_book.json: The precomputed opening book for optimized gameplay.
 If you need access to these files, please email adamforward19@gmail.com for more information.
 
-Deployment Details
-Website: https://afchessengine.com
-Backend: Rust-based API hosted at https://api.afchessengine.com.
-The backend and frontend communicate seamlessly to provide a smooth and interactive chess-playing experience.
 
 Getting Started
 Prerequisites
